@@ -1,0 +1,189 @@
+#########################################
+#
+# This script is used to analyze the 
+# relationship between baseline TDp
+# and the treat effect.
+#
+#
+# Liang Qunjun   2023/08/10
+
+library(tidyverse)
+library(ggeasy)
+library(ggsci)
+library(ggsignif)
+library(patchwork)
+library(caret)
+
+# load the data
+dat_td   <- rio::import(file = "inputs/Analysis2_TDp_collection.xlsx") 
+
+# combine HAMD and TD data
+dat_use <- dat_td %>% filter(treatGroup != "undefine")
+
+# the distribution of treatment response in LPA groups
+p_lpa_treatGroup <- dat_use %>% filter(treatGroup != "undefine" & !is.na(treatGroup)) %>%
+  ggplot(aes(x = LPAgroup, fill = treatGroup)) +
+  geom_bar(position = position_fill(), alpha = .6) +
+  scale_fill_manual(values = c("#2E2A2BFF", "#CF4E9CFF")) + xlab("LPA subgroups") + ylab("Percentage") +
+  coord_flip() + 
+  theme_classic() + easy_add_legend_title("Response") 
+p_lpa_treatGroup
+
+###############################################################################
+#
+# Profile of the treat-different groups
+#
+###############################################################################
+
+# the baseline HAMD total score in different treat groups
+bruceR::MANOVA(data = dat_use, subID = "participant_id", 
+               dv = "HAMD_wave1_total", between = "treatGroup",
+               covariate = c("age", "gender"))
+# ───────────────────────────────
+# "treatGroup"   Mean    S.D.  n
+# ───────────────────────────────
+# negative 25.529 (6.307) 51
+# positive 28.672 (5.685) 67
+# ───────────────────────────────
+# Covariate(s):               age, gender, educations
+# ───────────────────────────────────────────────────────────────────────────
+# MS    MSE df1 df2     F     p     η²p [90% CI of η²p]  η²G
+# ───────────────────────────────────────────────────────────────────────────
+# treatGroup  234.760 35.154   1 115 6.678  .011 *     .055 [.007, .136] .055
+# age          75.430 35.154   1 115 2.146  .146       .018 [.000, .078] .018
+# gender        3.509 35.154   1 115 0.100  .753       .001 [.000, .028] .001
+# ───────────────────────────────────────────────────────────────────────────
+
+# the baseline TD in different treat groups
+bruceR::MANOVA(data = dat_use, subID = "participant_id", 
+               dv = "TD_mean", between = "treatGroup",
+               covariate = c("age", "gender", "QC_bold_fd_mean"))
+# ───────────────────────────────
+# "treatGroup"   Mean    S.D.  n
+# ───────────────────────────────
+# negative -0.012 (0.014) 51
+# positive -0.011 (0.014) 67
+# ───────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# MS   MSE df1 df2     F     p     η²p [90% CI of η²p]  η²G
+# ─────────────────────────────────────────────────────────────────────────────
+# treatGroup       0.000 0.000   1 114 0.754  .387       .007 [.000, .053] .007
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+f_log1 <- dat_use %>% .$treatGroup
+f_log1 <- c(.75, 1.75)[as.integer(factor(f_log1))]
+
+p_baseHAMD <- ggplot(dat_use, aes(x = treatGroup, y = HAMD_wave1_total)) +
+  geom_boxplot(fill = c("#2E2A2BFF", "#CF4E9CFF"), alpha = .6, width = .3) +
+  geom_point(aes(x = f_log1), position = position_jitter(.02), size = 3, alpha = .4) +
+  geom_signif(annotations = c("**"), 
+              textsize = 7, 
+              vjust = .7,
+              y_position = c(42), 
+              xmin = c(1), 
+              xmax = c(2),
+              tip_length = 0) +
+  ylab("baseline HAMD score") + xlab("Treatment response") +
+  coord_flip() +
+  theme_classic() + easy_text_size(15)
+p_baseHAMD
+
+Cairo::Cairo(file = "outputs/Anay4_baselineHAMD.png")
+print(p_baseHAMD)
+dev.off()
+
+###############################################################################
+#
+# Logistic regression -- LPA subgroups
+#
+###############################################################################
+
+dat_lm_logi <- dat_use %>%
+  mutate(treatEff_recode = ifelse(treatGroup == "positive", 1, 0))
+dat_lm_logi$treatEff_recode <- factor(dat_lm_logi$treatEff_recode, levels = c(0,1),
+                                      labels = c("negative","positive"))
+
+## model for all LPA group ---------------------------------------------------------
+model_logi <- glm(treatEff_recode ~  visual_mean + somMot_mean + ATN_mean +
+                       salience_mean + FPN_mean + DMN_mean +
+                       age + gender + QC_bold_fd_mean + HAMD_wave1_total, 
+                     data = dat_lm_logi,
+                     family = binomial())
+bruceR::GLM_summary(model_logi)
+# ─────────────────────────────────────────────────────────────────────────────────
+# b    S.E.      z     p         [95% CI of b]      OR   VIF
+# ─────────────────────────────────────────────────────────────────────────────────
+# salience_mean      4.618 (2.710)  1.704  .088 .   [ -0.694,  9.929] 101.251 1.078
+# FPN_mean          -8.368 (3.434) -2.437  .015 *   [-15.099, -1.638]   0.000 1.169
+
+## model for A adn C LPA group ---------------------------------------------------------
+model_logi_ac <- glm(treatEff_recode ~  visual_mean + somMot_mean + ATN_mean +
+                    salience_mean + FPN_mean + DMN_mean +
+                    age + gender + QC_bold_fd_mean + HAMD_wave1_total, 
+                  data = dat_lm_logi %>% filter(LPAgroup == "A" | LPAgroup == "C"),
+                  family = binomial())
+bruceR::GLM_summary(model_logi_ac)
+# ─────────────────────────────────────────────────────────────────────────────────────
+# b     S.E.      z     p         [95% CI of b]        OR   VIF
+# ─────────────────────────────────────────────────────────────────────────────────────
+# salience_mean      10.556 ( 4.933)  2.140  .032 *   [  0.888, 20.225] 38413.158 1.122
+
+## model for B and D LPA group ---------------------------------------------------------
+model_logi_bd <- glm(treatEff_recode ~  visual_mean + somMot_mean + ATN_mean +
+                       salience_mean + FPN_mean + DMN_mean +
+                       age + gender + QC_bold_fd_mean  + HAMD_wave1_total, 
+                  data = dat_lm_logi %>% filter(LPAgroup == "B" | LPAgroup == "D"),
+                  family = binomial())
+bruceR::GLM_summary(model_logi_bd)
+# ──────────────────────────────────────────────────────────────────────────────────
+# b     S.E.      z     p         [95% CI of b]      OR   VIF
+# ──────────────────────────────────────────────────────────────────────────────────
+# FPN_mean          -14.031 ( 5.728) -2.450  .014 *   [-25.257, -2.805]   0.000 1.207
+
+bruceR::model_summary(model.list = list(model_logi, model_logi_ac, model_logi_bd),
+                      modify.head = c("All group", "A and C", "B and D"),
+                      file = "outputs/Anay3_treat_response_logistic.doc")
+
+# visualize the logistic regression results
+
+dat_lm_logi$LPAgroup <- factor(dat_lm_logi$LPAgroup, levels = c("A","C","B","D"))
+label_use <- c(FPN_mean = "Fronto-parietal Net.",
+               salience_mean = "Salience Net.",
+               somMot_mean = "Somatosensory Net.")
+
+p_logstic <- dat_lm_logi %>% 
+  select(participant_id, LPAgroup, treatEff_recode, 
+         somMot_mean, salience_mean, FPN_mean) %>%
+  pivot_longer(cols = 4:6, names_to = "network", values_to = "td") %>%
+  ggplot(aes(x = LPAgroup, y = td, fill = treatEff_recode)) +
+  geom_boxplot(alpha = .5) + 
+  facet_grid(.~network, labeller = labeller(network = label_use)) +
+  xlab('LPA groups') + ylab("Mean time delay") +
+  scale_fill_manual(values = c("#2E2A2BFF", "#CF4E9CFF")) + ylim(-.15, .15) +
+  theme_bruce() + 
+  easy_add_legend_title("Response") +
+  easy_text_size(15)
+p_logstic
+
+###############################################################################
+#
+# combine plots
+#
+###############################################################################
+
+p_combine <- (p_baseHAMD + p_lpa_treatGroup) / p_logstic +
+  plot_layout(heights = c(1,2), guides = "collect") +
+  plot_annotation(tag_levels = "A") &
+  theme(text = element_text(size = 15), 
+        axis.title.x = element_text(size =10),
+        axis.text =  element_text(size =13),
+        axis.title.y = element_text(size = 10, face = "bold"),
+        legend.title = element_text(size =13),
+        plot.tag = element_text(size = 18, face = "bold"))
+
+p_combine
+
+Cairo::Cairo(file = "outputs/Anay3_combine_plot.png", width = 900, height = 800)
+print(p_combine)
+dev.off()

@@ -1,0 +1,215 @@
+parcel_id,net_id,net_color,net_name,network
+13,1,Cyan,Sensory/somatomotor Hand,somMot
+14,1,Cyan,Sensory/somatomotor Hand,somMot
+15,1,Cyan,Sensory/somatomotor Hand,somMot
+16,1,Cyan,Sensory/somatomotor Hand,somMot
+17,1,Cyan,Sensory/somatomotor Hand,somMot
+18,1,Cyan,Sensory/somatomotor Hand,somMot
+19,1,Cyan,Sensory/somatomotor Hand,somMot
+20,1,Cyan,Sensory/somatomotor Hand,somMot
+21,1,Cyan,Sensory/somatomotor Hand,somMot
+22,1,Cyan,Sensory/somatomotor Hand,somMot
+23,1,Cyan,Sensory/somatomotor Hand,somMot
+24,1,Cyan,Sensory/somatomotor Hand,somMot
+25,1,Cyan,Sensory/somatomotor Hand,somMot
+26,1,Cyan,Sensory/somatomotor Hand,somMot
+27,1,Cyan,Sensory/somatomotor Hand,somMot
+28,1,Cyan,Sensory/somatomotor Hand,somMot
+29,1,Cyan,Sensory/somatomotor Hand,somMot
+30,1,Cyan,Sensory/somatomotor Hand,somMot
+31,1,Cyan,Sensory/somatomotor Hand,somMot
+32,1,Cyan,Sensory/somatomotor Hand,somMot
+33,1,Cyan,Sensory/somatomotor Hand,somMot
+34,1,Cyan,Sensory/somatomotor Hand,somMot
+35,1,Cyan,Sensory/somatomotor Hand,somMot
+36,1,Cyan,Sensory/somatomotor Hand,somMot
+37,1,Cyan,Sensory/somatomotor Hand,somMot
+38,1,Cyan,Sensory/somatomotor Hand,somMot
+39,1,Cyan,Sensory/somatomotor Hand,somMot
+40,1,Cyan,Sensory/somatomotor Hand,somMot
+41,1,Cyan,Sensory/somatomotor Hand,somMot
+42,2,Orange,Sensory/somatomotor Mouth,somMot
+43,2,Orange,Sensory/somatomotor Mouth,somMot
+44,2,Orange,Sensory/somatomotor Mouth,somMot
+45,2,Orange,Sensory/somatomotor Mouth,somMot
+46,2,Orange,Sensory/somatomotor Mouth,somMot
+47,3,Purple,Cingulo-opercular Task Control,VAN
+48,3,Purple,Cingulo-opercular Task Control,VAN
+49,3,Purple,Cingulo-opercular Task Control,VAN
+50,3,Purple,Cingulo-opercular Task Control,VAN
+51,3,Purple,Cingulo-opercular Task Control,VAN
+52,3,Purple,Cingulo-opercular Task Control,VAN
+53,3,Purple,Cingulo-opercular Task Control,VAN
+54,3,Purple,Cingulo-opercular Task Control,VAN
+55,3,Purple,Cingulo-opercular Task Control,VAN
+56,3,Purple,Cingulo-opercular Task Control,VAN
+57,3,Purple,Cingulo-opercular Task Control,VAN
+58,3,Purple,Cingulo-opercular Task Control,VAN
+59,3,Purple,Cingulo-opercular Task Control,VAN
+60,3,Purple,Cingulo-opercular Task Control,VAN
+61,4,Pink,Auditory,VAN
+62,4,Pink,Auditory,VAN
+63,4,Pink,Auditory,VAN
+64,4,Pink,Auditory,VAN
+65,4,Pink,Auditory,VAN
+66,4,Pink,Auditory,VAN
+67,4,Pink,Auditory,VAN
+68,4,Pink,Auditory,VAN
+69,4,Pink,Auditory,VAN
+70,4,Pink,Auditory,VAN
+71,4,Pink,Auditory,VAN
+72,4,Pink,Auditory,VAN
+73,4,Pink,Auditory,VAN
+74,5,Red,Default mode,DMN
+75,5,Red,Default mode,DMN
+76,5,Red,Default mode,DMN
+77,5,Red,Default mode,DMN
+78,5,Red,Default mode,DMN
+79,5,Red,Default mode,DMN
+80,5,Red,Default mode,DMN
+81,5,Red,Default mode,DMN
+82,5,Red,Default mode,DMN
+83,5,Red,Default mode,DMN
+86,5,Red,Default mode,DMN
+87,5,Red,Default mode,DMN
+88,5,Red,Default mode,DMN
+89,5,Red,Default mode,DMN
+90,5,Red,Default mode,DMN
+91,5,Red,Default mode,DMN
+92,5,Red,Default mode,DMN
+93,5,Red,Default mode,DMN
+94,5,Red,Default mode,DMN
+95,5,Red,Default mode,DMN
+96,5,Red,Default mode,DMN
+97,5,Red,Default mode,DMN
+98,5,Red,Default mode,DMN
+99,5,Red,Default mode,DMN
+100,5,Red,Default mode,DMN
+101,5,Red,Default mode,DMN
+102,5,Red,Default mode,DMN
+103,5,Red,Default mode,DMN
+104,5,Red,Default mode,DMN
+105,5,Red,Default mode,DMN
+106,5,Red,Default mode,DMN
+107,5,Red,Default mode,DMN
+108,5,Red,Default mode,DMN
+109,5,Red,Default mode,DMN
+110,5,Red,Default mode,DMN
+111,5,Red,Default mode,DMN
+112,5,Red,Default mode,DMN
+113,5,Red,Default mode,DMN
+114,5,Red,Default mode,DMN
+115,5,Red,Default mode,DMN
+116,5,Red,Default mode,DMN
+117,5,Red,Default mode,DMN
+118,5,Red,Default mode,DMN
+119,5,Red,Default mode,DMN
+120,5,Red,Default mode,DMN
+121,5,Red,Default mode,DMN
+122,5,Red,Default mode,DMN
+123,5,Red,Default mode,DMN
+124,5,Red,Default mode,DMN
+125,5,Red,Default mode,DMN
+126,5,Red,Default mode,DMN
+127,5,Red,Default mode,DMN
+128,5,Red,Default mode,DMN
+129,5,Red,Default mode,DMN
+130,5,Red,Default mode,DMN
+131,5,Red,Default mode,DMN
+137,5,Red,Default mode,DMN
+138,11,Teal,Ventral attention,Limbic
+139,5,Red,Default mode,DMN
+143,7,Blue,Visual,VIS
+144,7,Blue,Visual,VIS
+145,7,Blue,Visual,VIS
+146,7,Blue,Visual,VIS
+147,7,Blue,Visual,VIS
+148,7,Blue,Visual,VIS
+149,7,Blue,Visual,VIS
+150,7,Blue,Visual,VIS
+151,7,Blue,Visual,VIS
+152,7,Blue,Visual,VIS
+153,7,Blue,Visual,VIS
+154,7,Blue,Visual,VIS
+155,7,Blue,Visual,VIS
+156,7,Blue,Visual,VIS
+157,7,Blue,Visual,VIS
+158,7,Blue,Visual,VIS
+159,7,Blue,Visual,VIS
+160,7,Blue,Visual,VIS
+161,7,Blue,Visual,VIS
+162,7,Blue,Visual,VIS
+163,7,Blue,Visual,VIS
+164,7,Blue,Visual,VIS
+165,7,Blue,Visual,VIS
+166,7,Blue,Visual,VIS
+167,7,Blue,Visual,VIS
+168,7,Blue,Visual,VIS
+169,7,Blue,Visual,VIS
+170,7,Blue,Visual,VIS
+171,7,Blue,Visual,VIS
+172,7,Blue,Visual,VIS
+173,7,Blue,Visual,VIS
+174,8,Yellow,Fronto-parietal Task Control,FPC
+175,8,Yellow,Fronto-parietal Task Control,FPC
+176,8,Yellow,Fronto-parietal Task Control,FPC
+177,8,Yellow,Fronto-parietal Task Control,FPC
+178,8,Yellow,Fronto-parietal Task Control,FPC
+179,8,Yellow,Fronto-parietal Task Control,FPC
+180,8,Yellow,Fronto-parietal Task Control,FPC
+181,8,Yellow,Fronto-parietal Task Control,FPC
+186,8,Yellow,Fronto-parietal Task Control,FPC
+187,8,Yellow,Fronto-parietal Task Control,FPC
+188,8,Yellow,Fronto-parietal Task Control,FPC
+189,8,Yellow,Fronto-parietal Task Control,FPC
+190,8,Yellow,Fronto-parietal Task Control,FPC
+191,8,Yellow,Fronto-parietal Task Control,FPC
+192,8,Yellow,Fronto-parietal Task Control,FPC
+193,8,Yellow,Fronto-parietal Task Control,FPC
+194,8,Yellow,Fronto-parietal Task Control,FPC
+195,8,Yellow,Fronto-parietal Task Control,FPC
+196,8,Yellow,Fronto-parietal Task Control,FPC
+197,8,Yellow,Fronto-parietal Task Control,FPC
+198,8,Yellow,Fronto-parietal Task Control,FPC
+199,8,Yellow,Fronto-parietal Task Control,FPC
+200,8,Yellow,Fronto-parietal Task Control,FPC
+201,8,Yellow,Fronto-parietal Task Control,FPC
+202,8,Yellow,Fronto-parietal Task Control,FPC
+203,9,Black,Salience,VAN
+204,9,Black,Salience,VAN
+205,9,Black,Salience,VAN
+206,9,Black,Salience,VAN
+207,9,Black,Salience,VAN
+208,9,Black,Salience,VAN
+209,9,Black,Salience,VAN
+210,9,Black,Salience,VAN
+211,9,Black,Salience,VAN
+212,9,Black,Salience,VAN
+213,9,Black,Salience,VAN
+214,9,Black,Salience,VAN
+215,9,Black,Salience,VAN
+216,9,Black,Salience,VAN
+217,9,Black,Salience,VAN
+218,9,Black,Salience,VAN
+219,9,Black,Salience,VAN
+220,9,Black,Salience,VAN
+235,11,Teal,Ventral attention,Limbic
+236,11,Teal,Ventral attention,Limbic
+237,11,Teal,Ventral attention,Limbic
+238,11,Teal,Ventral attention,Limbic
+239,11,Teal,Ventral attention,Limbic
+240,11,Teal,Ventral attention,Limbic
+241,11,Teal,Ventral attention,Limbic
+242,11,Teal,Ventral attention,Limbic
+251,12,Green,Dorsal attention,DAN
+252,12,Green,Dorsal attention,DAN
+255,1,Cyan,Sensory/somatomotor Hand,somMot
+256,12,Green,Dorsal attention,DAN
+257,12,Green,Dorsal attention,DAN
+258,12,Green,Dorsal attention,DAN
+259,12,Green,Dorsal attention,DAN
+260,12,Green,Dorsal attention,DAN
+261,12,Green,Dorsal attention,DAN
+262,12,Green,Dorsal attention,DAN
+263,12,Green,Dorsal attention,DAN
+264,12,Green,Dorsal attention,DAN

@@ -1,0 +1,9 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+outputs/*
+MDD_symptom_specific.Rproj
+scripts_backup/*
+inputs/timeseries_TD/*
+REST/*
