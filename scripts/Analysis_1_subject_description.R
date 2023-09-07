@@ -43,7 +43,7 @@ table1::table1(data = dat_mdd, ~ age + educations | gender)
 #############################################################
 
 # define the items
-item_depression <- c(1,2,7,8,10,13)
+item_depression <- c(1,2,7,8,13)
 item_anxiety <- c(9,10,11)
 item_sleepness <- c(4,5,6)
 fact_depression_total <- length(item_depression)*4

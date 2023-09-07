@@ -34,14 +34,12 @@ dat_td_net <- dat_td %>%
   mutate(visual_mean = rowMeans(across(all_of(1+which(net_id$network_new == "visual"))), na.rm = T)) %>%
   mutate(salience_mean = rowMeans(across(all_of(1+which(net_id$network_new == "salience"))), na.rm = T)) %>%
   mutate(ATN_mean = rowMeans(across(all_of(1+which(net_id$network_new == "ATN"))), na.rm = T)) %>%
-  #mutate(Aud_mean = rowMeans(across(all_of(1+which(net_id$network_new == "Aud"))), na.rm = T)) %>%
   mutate(FPN_mean = rowMeans(across(all_of(1+which(net_id$network_new == "FPN"))), na.rm = T)) %>%
   mutate(DMN_mean = rowMeans(across(all_of(1+which(net_id$network_new == "DMN"))), na.rm = T)) %>%
   rowwise() %>%
   mutate(visual_sd = sd(across(all_of(1+which(net_id$network_new == "visual"))), na.rm = T)) %>%
   mutate(somMot_sd = sd(across(all_of(1+which(net_id$network_new == "somMot"))), na.rm = T)) %>%
   mutate(salience_sd = sd(across(all_of(1+which(net_id$network_new == "salience"))), na.rm = T)) %>%
-  #mutate(Aud_sd = sd(across(all_of(1+which(net_id$network_new == "Aud"))), na.rm = T)) %>%
   mutate(ATN_sd = sd(across(all_of(1+which(net_id$network_new == "ATN"))), na.rm = T)) %>%
   mutate(FPN_sd = sd(across(all_of(1+which(net_id$network_new == "FPN"))), na.rm = T)) %>%
   mutate(DMN_sd = sd(across(all_of(1+which(net_id$network_new == "DMN"))), na.rm = T)) %>%

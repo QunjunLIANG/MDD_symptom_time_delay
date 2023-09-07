@@ -213,7 +213,7 @@ p_log_dot_visual <- dat_td %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
   easy_text_size(13)
 p_log_dot_visual
 
-#############################################################################
+############################################################################
 #
 # The correlation between symptom and TD
 #
@@ -238,20 +238,53 @@ cor_mat <- dat_use %>%
 # HAMD_wave1_total-salience_mean   0.07 [-0.21, 0.33]  .668     128
 # HAMD_wave1_total-ATN_mean        0.23 [-0.05, 0.47]  .044 *   128
 
-## HAMD & ATN correlation between B and D
-dat_cor_lpa <- data.frame()
-for (lpa in c("A","B","C","D")) {
+## correlation between SMN ,VN and HAMD depression subfactor in group B and D
+dat_hamd_cor_lpa_SMN <- data.frame()
+for (lpa in c("B","D")) {
   cor_tmp <- dat_use %>% filter(LPAgroup == lpa) %>%
-    cor.test(~ HAMD_wave1_total + ATN_mean, data = .)
+    cor.test(~ HAMD_wave1_depression + somMot_mean, data = .)
   dat_tmp <- data.frame(
     LPAgroup = lpa,
+    network = "somMot",
     r_value = cor_tmp$estimate,
     conf_low = cor_tmp$conf.int[1],
-    conf_up = cor_tmp$conf.int[2]
+    conf_up = cor_tmp$conf.int[2],
+    p_value = cor_tmp$p.value
   )
-  dat_cor_lpa <- rbind(dat_cor_lpa, dat_tmp)
+  dat_hamd_cor_lpa_SMN <- rbind(dat_hamd_cor_lpa_SMN, dat_tmp)
 }
-dat_cor_lpa
+dat_hamd_cor_lpa_SMN["p_fdr"] <- p.adjust(dat_hamd_cor_lpa_SMN$p_value, method = 'fdr')
+# LPAgroup    r_value   conf_low    conf_up     p_value      p_fdr
+# cor         B  0.1202648 -0.1831550  0.4027648 0.436799377 0.43679938
+# cor1        D -0.5140404 -0.7517149 -0.1581855 0.007223762 0.01444752
+
+dat_hamd_cor_lpa_VN <- data.frame()
+for (lpa in c("B","D")) {
+  cor_tmp <- dat_use %>% filter(LPAgroup == lpa) %>%
+    cor.test(~ HAMD_wave1_depression + visual_mean, data = .)
+  dat_tmp <- data.frame(
+    LPAgroup = lpa,
+    network = "visual",
+    r_value = cor_tmp$estimate,
+    conf_low = cor_tmp$conf.int[1],
+    conf_up = cor_tmp$conf.int[2],
+    p_value = cor_tmp$p.value
+  )
+  dat_hamd_cor_lpa_VN <- rbind(dat_hamd_cor_lpa_VN, dat_tmp)
+}
+dat_hamd_cor_lpa_VN["p_fdr"] <- p.adjust(dat_hamd_cor_lpa_VN$p_value, method = 'fdr')
+# LPAgroup    r_value   conf_low     conf_up    p_value      p_fdr
+# cor         B  0.0612300 -0.2400133  0.35171686 0.69296675 0.69296675
+# cor1        D -0.4113547 -0.6889328 -0.02855228 0.03681651 0.07363302
+
+dat_hamd_cor_collect <- rbind(
+  dat_hamd_cor_lpa_SMN, dat_hamd_cor_lpa_VN
+)
+# LPAgroup network    r_value   conf_low     conf_up     p_value      p_fdr
+# cor          B  somMot  0.1202648 -0.1831550  0.40276476 0.436799377 0.43679938
+# cor1         D  somMot -0.5140404 -0.7517149 -0.15818545 0.007223762 0.01444752
+# cor2         B  visual  0.0612300 -0.2400133  0.35171686 0.692966745 0.69296675
+# cor11        D  visual -0.4113547 -0.6889328 -0.02855228 0.036816508 0.07363302
 
 #############################################################################
 #
@@ -267,14 +300,14 @@ p_dot_ATN_hamd <- ggplot(dat_use, aes(y = ATN_mean, x = HAMD_wave1_total)) +
   theme_classic() + easy_text_size(13)
 p_dot_ATN_hamd
 
-## plot the LPAgroup-specific ATN-HAMD total score correlation
-p_cor_lpa_bar <- ggplot(dat_cor_lpa, aes(x = LPAgroup, y = r_value)) +
-  geom_bar(stat = "identity", 
-           fill = c("#00468BFF","#ED0000FF","#42B540FF","#0099B4FF"),
-           alpha = .6) +
+## plot the LPA group specific correlation
+p_hamd_lpa_net <- ggplot(dat_hamd_cor_collect, aes(x = network, y = r_value, fill = LPAgroup)) +
+  geom_bar(stat = "identity", position = position_dodge2()) +
+  scale_fill_manual(values = c("#ED0000FF","#0099B4FF")) +
+  geom_hline(yintercept = 0) +
   ylab("Correlation") +
-  theme_classic() +
-  easy_text_size(13)
+  theme_classic() + easy_move_legend(to = "top") +
+  easy_text_size(13) + easy_remove_x_axis(what = "title")
 
 #############################################################################
 #
@@ -289,7 +322,7 @@ BBBCCC
 "
 
 p_combine <- p_power264 + p_log_dot_somMot + 
-  p_log_dot_visual + p_dot_ATN_hamd + p_cor_lpa_bar + 
+  p_log_dot_visual + p_dot_ATN_hamd + p_hamd_lpa_net + 
   plot_layout(design = layout_use) +
   plot_annotation(tag_levels = "A") &
   theme(text = element_text(size = 15), 
@@ -300,6 +333,7 @@ p_combine <- p_power264 + p_log_dot_somMot +
         plot.tag = element_text(size = 18, face = "bold"))
 p_combine
 
-Cairo::Cairo(width = 900, height = 700, file = "outputs/Anay2_plot_combine.png")
+Cairo::Cairo(width = 2700, height = 2300, dpi = 300,
+             file = "outputs/Anay2_plot_combine.png")
 print(p_combine)
 dev.off()

@@ -24,6 +24,7 @@ library(patchwork)
 
 # load the data
 dat_mdd <- rio::import("inputs/REST_2_timeDelay.xlsx")
+dat_cohor1 <- rio::import("inputs/Analysis2_TDp_collection.xlsx")
 
 #############################################################
 #
@@ -32,7 +33,7 @@ dat_mdd <- rio::import("inputs/REST_2_timeDelay.xlsx")
 #############################################################
 
 # define the items
-item_depression <- c(1,2,7,8,10,13)
+item_depression <- c(1,2,7,8,13)
 item_anxiety <- c(9,10,11)
 item_sleepness <- c(4,5,6)
 fact_depression_total <- length(item_depression)*4
@@ -48,6 +49,57 @@ hamd_wave1 <- hamd_wave1 %>%
 
 # merger the factor to the main data table
 dat_mdd_factor <- dat_mdd %>% left_join(hamd_wave1) 
+
+#############################################################
+#
+# comparing HAMD and HAMA socre between the main dataset and 
+# the validation dataset
+#
+#############################################################
+
+t.test(dat_cohor1$HAMD_wave1_total, dat_mdd_factor$HAMD)
+# data:  dat_cohor1$HAMD_wave1_total and dat_mdd_factor$HAMD
+# t = 7.0474, df = 224.89, p-value = 2.207e-11
+# alternative hypothesis: true difference in means is not equal to 0
+# 95 percent confidence interval:
+#   3.588614 6.374435
+# sample estimates:
+#   mean of x mean of y 
+# 26.35938  21.37785 
+
+t.test(dat_cohor1$HAMA_wave1_total, dat_mdd_factor$HAMA)
+# data:  dat_cohor1$HAMA_wave1_total and dat_mdd_factor$HAMA
+# t = 3.4284, df = 255.79, p-value = 0.0007075
+# alternative hypothesis: true difference in means is not equal to 0
+# 95 percent confidence interval:
+#   1.496753 5.536892
+# sample estimates:
+#   mean of x mean of y 
+# 20.86719  17.35036 
+
+## plot the comparison between HAMD
+plot_compa_hamd <- data.frame(HAMD = c(dat_cohor1$HAMD_wave1_total,
+                    validation = dat_mdd_factor$HAMD),
+           dataset = c(rep("main", times = length(dat_cohor1$HAMD_wave1_total)),
+                       rep("validation", times = length(dat_mdd_factor$HAMD)))) %>%
+  ggplot(aes(x = HAMD, fill = dataset)) +
+  geom_histogram(aes(y =..density..), bins = 40, alpha = .6, color = 'white') +
+  geom_density(aes(y =-..density..), alpha = .6, color = "white") +
+  xlab("HAMD total score") +
+  theme_classic() + easy_text_size(13)
+plot_compa_hamd
+
+## plot the comparison between HAMA
+plot_compa_hama <- data.frame(HAMD = c(dat_cohor1$HAMA_wave1_total,
+                    validation = dat_mdd_factor$HAMA),
+           dataset = c(rep("main", times = length(dat_cohor1$HAMD_wave1_total)),
+                       rep("validation", times = length(dat_mdd_factor$HAMD)))) %>%
+  ggplot(aes(x = HAMD, fill = dataset)) +
+  geom_histogram(aes(y =..density..), bins = 40, alpha = .6, color = 'white') +
+  geom_density(aes(y =-..density..), alpha = .6, color = "white") +
+  xlab("HAMA total score") +
+  theme_classic() + easy_text_size(13) + easy_remove_legend()
+plot_compa_hama
 
 ##############################################################
 #
@@ -201,13 +253,14 @@ p_lpa_boxplot
 #
 ##############################################################
 
-p_combine <- (p_hama_hamd + p_lpa_bar + p_lpa_boxplot)/p_lpa_line +
+p_combine <- (plot_compa_hama + plot_compa_hamd)/p_lpa_line/(p_hama_hamd + p_lpa_bar + p_lpa_boxplot) +
   plot_layout(guides = "collect") +
   plot_annotation(tag_levels = "A")&
   theme(plot.tag = element_text(size = 18, face = "bold"))
 p_combine
 
-Cairo::Cairo(width = 1000, height = 650, file = "outputs/REST_Anay2_combine.png")
+Cairo::Cairo(width = 4300, height = 3000, 
+             file = "outputs/REST_2_combine.png", dpi = 300)
 print(p_combine)
 dev.off()
 

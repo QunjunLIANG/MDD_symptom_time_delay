@@ -38,21 +38,13 @@ power_doc_filter_mod$y <- as.numeric(power_doc_filter_mod$y) %>%
 power_doc_filter_mod$z <- as.numeric(power_doc_filter_mod$z) %>%
   round(digits = 0)
 
-## re-assign the networks into 7
+## re-assign the networks into 6
 ### DMN, FPN(fronto-parietal network), Salience, Attention(ATN), somatosensory (SMN), visual, auditory
 ### ATN contains dorsal and ventral attention networks, and cingulo-opercular network
 ### SMN contains all somatosensory-related and auditory networks
 ### reference (Watanabe & Rees, 2017, Nat. Comm.)
 ### 1 - visual | 2 - somMot | 3 - salience | 4 - ATN 
 ### 5 - FPN | 6 - DMN
-# power_doc_filter_mod_reassign <- power_doc_filter_mod %>%
-#   mutate(clust_new = ifelse(clust_ori == 1 | clust_ori == 2 , 2,
-#                             ifelse(clust_ori == 7, 1,
-#                                    ifelse(clust_ori == 9, 3,
-#                                           ifelse(clust_ori == 3| clust_ori == 11 | clust_ori == 12, 4,
-#                                                  ifelse(clust_ori == 4, 5,
-#                                                     ifelse(clust_ori == 8, 6, 7)))))))
-
 power_doc_filter_mod_reassign <- power_doc_filter_mod %>%
   mutate(clust_new = ifelse(clust_ori == 1 | clust_ori == 2 , 2,
                             ifelse(clust_ori == 7, 1,

@@ -141,9 +141,37 @@ bruceR::GLM_summary(model_logi_bd)
 # ──────────────────────────────────────────────────────────────────────────────────
 # FPN_mean          -14.031 ( 5.728) -2.450  .014 *   [-25.257, -2.805]   0.000 1.207
 
-bruceR::model_summary(model.list = list(model_logi, model_logi_ac, model_logi_bd),
-                      modify.head = c("All group", "A and C", "B and D"),
-                      file = "outputs/Anay3_treat_response_logistic.doc")
+## model for B and D LPA group - somatomotor ---------------------------------------------------------
+dat_lm_logi %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
+  bruceR::MANOVA(subID = "participant_id", dv = "somMot_mean", 
+                 between = c("LPAgroup","treatEff_recode"),
+                 covariate = c("age","gender","QC_bold_fd_mean")) %>%
+  bruceR::EMMEANS("treatEff_recode", by = "LPAgroup")
+# ────────────────────────────────────────────────────────────────────────────────────────
+# MS   MSE df1 df2     F     p     η²p [90% CI of η²p]  η²G
+# ────────────────────────────────────────────────────────────────────────────────────────
+# LPAgroup                    0.020 0.002   1  63 9.446  .003 **    .130 [.028, .265] .130
+# treatEff_recode             0.000 0.002   1  63 0.023  .879       .000 [.000, .028] .000
+# age                         0.001 0.002   1  63 0.618  .435       .010 [.000, .085] .010
+# gender                      0.001 0.002   1  63 0.385  .537       .006 [.000, .074] .006
+# QC_bold_fd_mean             0.016 0.002   1  63 7.730  .007 **    .109 [.018, .240] .109
+# LPAgroup * treatEff_recode  0.014 0.002   1  63 6.858  .011 *     .098 [.013, .227] .098
+# ────────────────────────────────────────────────────────────────────────────────────────
+# Pairwise Comparisons of "treatEff_recode":
+# ────────────────────────────────────────────────────────────────────────────────────────────
+# Contrast "LPAgroup" Estimate    S.E. df      t     p     Cohen’s d [95% CI of d]
+# ────────────────────────────────────────────────────────────────────────────────────────────
+# positive - negative          B   -0.033 (0.015) 63 -2.255  .028 *   -0.728 [-1.373, -0.083]
+# positive - negative          D    0.037 (0.023) 63  1.642  .106      0.820 [-0.178,  1.817]
+# ────────────────────────────────────────────────────────────────────────────────────────────
+
+## model for B and D LPA group - visual ---------------------------------------------------------
+dat_lm_logi %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
+  bruceR::MANOVA(subID = "participant_id", dv = "visual_mean", 
+                 between = c("LPAgroup","treatEff_recode"),
+                 covariate = c("age","gender","QC_bold_fd_mean")) %>%
+  bruceR::EMMEANS("treatEff_recode", by = "LPAgroup")
+
 
 # visualize the logistic regression results
 

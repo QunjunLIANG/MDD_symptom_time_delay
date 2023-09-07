@@ -96,22 +96,49 @@ cor_mat <- dat_td %>%
 # HAMD-FPN_mean               0.02 [-0.15,  0.20]  .790     307
 # HAMD-DMN_mean               0.06 [-0.11,  0.24]  .388     307
 
-## HAMD & ATN correlation between B and D
-dat_cor_lpa <- data.frame()
-for (lpa in c("A","B","C","D")) {
+
+## correlation between SMN ,VN and HAMD depression subfactor in group B and D
+dat_hamd_cor_lpa_SMN <- data.frame()
+for (lpa in c("B","D")) {
   cor_tmp <- dat_td %>% filter(LPAgroup == lpa) %>%
-    cor.test(~ HAMD + ATN_mean, data = .)
+    cor.test(~ HAMD_depression + somMot_mean, data = .)
   dat_tmp <- data.frame(
     LPAgroup = lpa,
+    network = "somMot",
     r_value = cor_tmp$estimate,
     conf_low = cor_tmp$conf.int[1],
     conf_up = cor_tmp$conf.int[2],
     p_value = cor_tmp$p.value
   )
-  dat_cor_lpa <- rbind(dat_cor_lpa, dat_tmp)
+  dat_hamd_cor_lpa_SMN <- rbind(dat_hamd_cor_lpa_SMN, dat_tmp)
 }
-dat_cor_lpa["p_fdr"] <- p.adjust(dat_cor_lpa$p_value, method = 'fdr')
-dat_cor_lpa
+dat_hamd_cor_lpa_SMN["p_fdr"] <- p.adjust(dat_hamd_cor_lpa_SMN$p_value, method = 'fdr')
+
+dat_hamd_cor_lpa_VN <- data.frame()
+for (lpa in c("B","D")) {
+  cor_tmp <- dat_td %>% filter(LPAgroup == lpa) %>%
+    cor.test(~ HAMD_depression + visual_mean, data = .)
+  dat_tmp <- data.frame(
+    LPAgroup = lpa,
+    network = "visual",
+    r_value = cor_tmp$estimate,
+    conf_low = cor_tmp$conf.int[1],
+    conf_up = cor_tmp$conf.int[2],
+    p_value = cor_tmp$p.value
+  )
+  dat_hamd_cor_lpa_VN <- rbind(dat_hamd_cor_lpa_VN, dat_tmp)
+}
+dat_hamd_cor_lpa_VN["p_fdr"] <- p.adjust(dat_hamd_cor_lpa_VN$p_value, method = 'fdr')
+
+dat_hamd_cor_collect <- rbind(
+  dat_hamd_cor_lpa_SMN, dat_hamd_cor_lpa_VN
+)
+dat_hamd_cor_collect
+# LPAgroup network     r_value    conf_low    conf_up    p_value     p_fdr
+# cor          B  somMot  0.01855429 -0.17014124 0.20593727 0.84813729 0.8481373
+# cor1         D  somMot -0.03626959 -0.20782107 0.13744649 0.68322368 0.8481373
+# cor2         B  visual  0.16105056 -0.02789624 0.33888611 0.09433279 0.1045477
+# cor11        D  visual -0.14357039 -0.30876228 0.03002922 0.10454769 0.1045477
 
 ###############################################################################
 #
@@ -188,15 +215,15 @@ p_dot_ATN_hamd <- ggplot(dat_td, aes(y = ATN_mean, x = HAMD)) +
   theme_classic() + easy_text_size(13)
 p_dot_ATN_hamd
 
-## plot the LPAgroup-specific ATN-HAMD total score correlation
-p_cor_lpa_bar <- ggplot(dat_cor_lpa, aes(x = LPAgroup, y = r_value)) +
-  geom_bar(stat = "identity", 
-           fill = c("#00468BFF","#ED0000FF","#42B540FF","#0099B4FF"),
-           alpha = .6) +
+## plot the LPA group specific correlation
+p_hamd_lpa_net <- ggplot(dat_hamd_cor_collect, aes(x = network, y = r_value, fill = LPAgroup)) +
+  geom_bar(stat = "identity", alpha = .6,
+           position = position_dodge2()) +
+  scale_fill_manual(values = c("#ED0000FF","#0099B4FF")) +
+  geom_hline(yintercept = 0) +
   ylab("Correlation") +
-  theme_classic() +
-  easy_text_size(13)
-p_cor_lpa_bar
+  theme_classic() + easy_move_legend(to = "top") +
+  easy_text_size(13) + easy_remove_x_axis(what = "title")
 
 ###############################################################################
 #
@@ -204,7 +231,7 @@ p_cor_lpa_bar
 #
 ###############################################################################
 
-p_combine <- (p_td_bar + p_atn_bar) / ( p_visual_bd + p_dot_ATN_hamd + p_cor_lpa_bar) +
+p_combine <- (p_td_bar + p_atn_bar) / ( p_visual_bd + p_dot_ATN_hamd + p_hamd_lpa_net) +
   plot_layout(heights = c(1.3, 1)) +
   plot_annotation(tag_levels = "A") &
   theme(text = element_text(size = 15), 
