@@ -90,7 +90,10 @@ p_power264 <- brainconn(atlas = net_anna,
           show.legend = T,
           all.nodes = T,
           view= "ortho") 
-p_power264 + scale_color_aaas()
+Cairo::Cairo(width = 1600, height = 1400, dpi = 300, file = "outputs/Power264.png")
+print(p_power264)
+dev.off()
+
 
 #############################################################################
 #
@@ -101,7 +104,8 @@ p_power264 + scale_color_aaas()
 # testing network-based difference between sever and moderated groups ---------------------
 dat_td %>% 
   select(participant_id, serverity, ends_with("mean"), QC_bold_fd_mean, age, gender, educations) %>%
-  pivot_longer(cols = 3:9, names_to = "network", values_to = "td") %>%
+  select(-TD_mean) %>%
+  pivot_longer(cols = 3:8, names_to = "network", values_to = "td") %>%
   bruceR::MANOVA(subID = "participant_id", dv = "td", 
                  between = "serverity", within = 'network',
                  covariate = c("age","gender","QC_bold_fd_mean"))
@@ -109,7 +113,8 @@ dat_td %>%
 # focusing on B and D ------------------------------------------------------
 dat_td %>% filter(serverity == "server") %>%
   select(participant_id, LPAgroup, ends_with("mean"), QC_bold_fd_mean, age, gender, educations) %>%
-  pivot_longer(cols = 3:9, names_to = "network", values_to = "td") %>%
+  select(-TD_mean) %>%
+  pivot_longer(cols = 3:8, names_to = "network", values_to = "td") %>%
   bruceR::MANOVA(subID = "participant_id", dv = "td", 
                  between = "LPAgroup", within = 'network',
                  covariate = c("age","gender","QC_bold_fd_mean"))%>%
@@ -117,39 +122,28 @@ dat_td %>% filter(serverity == "server") %>%
 # ───────────────────────────────────────────────────────────────────────────────────────
 # MS   MSE df1 df2     F     p     η²p [90% CI of η²p]  η²G
 # ───────────────────────────────────────────────────────────────────────────────────────
-# LPAgroup                   0.004 0.003   1  65 1.464  .231       .022 [.000, .112] .003
-# age                        0.009 0.003   1  65 3.457  .068 .     .050 [.000, .160] .007
-# gender                     0.012 0.003   1  65 4.886  .031 *     .070 [.004, .188] .010
-# QC_bold_fd_mean            0.002 0.003   1  65 0.875  .353       .013 [.000, .093] .002
-# network                    0.012 0.003   6 390 4.411 <.001 ***   .064 [.020, .094] .055
-# LPAgroup * network         0.006 0.003   6 390 2.297  .034 *     .034 [.001, .055] .030
-# age * network              0.008 0.003   6 390 2.914  .009 **    .043 [.006, .067] .037
-# gender * network           0.001 0.003   6 390 0.305  .934       .005 [.000, .002] .004
-# QC_bold_fd_mean * network  0.007 0.003   6 390 2.695  .014 *     .040 [.004, .063] .035
+# LPAgroup                   0.003 0.002   1  65 1.255  .267       .019 [.000, .105] .002
+# age                        0.008 0.002   1  65 3.459  .067 .     .051 [.000, .160] .007
+# gender                     0.011 0.002   1  65 4.963  .029 *     .071 [.004, .189] .009
+# QC_bold_fd_mean            0.002 0.002   1  65 0.930  .339       .014 [.000, .095] .002
+# network                    0.014 0.003   5 325 4.436 <.001 ***   .064 [.018, .100] .056
+# LPAgroup * network         0.007 0.003   5 325 2.306  .044 *     .034 [.000, .060] .030
+# age * network              0.009 0.003   5 325 2.928  .013 *     .043 [.005, .072] .038
+# gender * network           0.001 0.003   5 325 0.301  .912       .005 [.000, .004] .004
+# QC_bold_fd_mean * network  0.009 0.003   5 325 2.707  .021 *     .040 [.003, .068] .035
 # ───────────────────────────────────────────────────────────────────────────────────────
 # Pairwise Comparisons of "LPAgroup":
-#   ────────────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────────
 # Contrast     "network" Estimate    S.E. df      t     p     Cohen’s d [95% CI of d]
 # ────────────────────────────────────────────────────────────────────────────────────
-# D - B ATN_mean        -0.000 (0.014) 60 -0.032  .975     -0.007 [-0.430,  0.417]
-# D - B DMN_mean        -0.003 (0.011) 60 -0.261  .795     -0.041 [-0.359,  0.276]
-# D - B FPN_mean         0.012 (0.016) 60  0.732  .467      0.177 [-0.307,  0.662]
-# D - B salience_mean    0.016 (0.019) 60  0.866  .390      0.240 [-0.315,  0.795]
-# D - B somMot_mean     -0.028 (0.013) 60 -2.172  .034 *   -0.423 [-0.813, -0.034]
-# D - B TD_mean         -0.008 (0.005) 60 -1.596  .116     -0.119 [-0.269,  0.030]
-# D - B visual_mean     -0.035 (0.013) 60 -2.715  .009 **  -0.526 [-0.913, -0.138]
+# D - B ATN_mean         0.001 (0.014) 65  0.101  .920      0.018 [-0.339,  0.375]
+# D - B DMN_mean        -0.004 (0.010) 65 -0.369  .713     -0.048 [-0.306,  0.210]
+# D - B FPN_mean         0.010 (0.017) 65  0.577  .566      0.126 [-0.311,  0.564]
+# D - B salience_mean    0.022 (0.018) 65  1.192  .237      0.282 [-0.190,  0.754]
+# D - B somMot_mean     -0.026 (0.012) 65 -2.087  .041 *   -0.333 [-0.652, -0.014]
+# D - B visual_mean     -0.037 (0.012) 65 -3.038  .003 **  -0.483 [-0.800, -0.165]
 # ────────────────────────────────────────────────────────────────────────────────────
-# Pooled SD for computing Cohen’s d: 0.067
-
-# focusing on A and C ------------------------------------------------------
-dat_td %>% filter(serverity == "moderated") %>%
-  select(participant_id, LPAgroup, ends_with("mean"), QC_bold_fd_mean, age, gender, educations) %>%
-  pivot_longer(cols = 4:9, names_to = "network", values_to = "td") %>%
-  bruceR::MANOVA(subID = "participant_id", dv = "td", 
-                 between = "LPAgroup", within = 'network',
-                 covariate = c("age","gender","QC_bold_fd_mean"))%>%
-  bruceR::EMMEANS(effect = "LPAgroup", by = "network")
-
+# Pooled SD for computing Cohen’s d: 0.077
 
 #############################################################################
 #
@@ -179,10 +173,10 @@ p_log_dot_somMot <- dat_td %>% filter(LPAgroup == "D" | LPAgroup == "B") %>%
               xmin = c(1), 
               xmax = c(2),
               tip_length = 0) +
-  coord_flip() +
+  #coord_flip() +
   ylim(c(-0.11, 0.13)) +
   ylab("Time delay") +  xlab("LPA group") +
-  ggtitle("Somatomotor network") +
+  ggtitle("Somatomotor") +
   theme_classic() +
   easy_text_size(13)
 p_log_dot_somMot
@@ -206,9 +200,9 @@ p_log_dot_visual <- dat_td %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
               y_position = .11, 
               xmin = 1, xmax = 2,
               tip_length = 0) +
-  coord_flip() +
+  #coord_flip() +
   ylim(c(-.11, .12)) + xlab("LPA group") +
-  ylab("Time delay") + ggtitle("Visual network") +
+  ylab("Time delay") + ggtitle("Visual") +
   theme_classic() +
   easy_text_size(13)
 p_log_dot_visual
@@ -308,6 +302,7 @@ p_hamd_lpa_net <- ggplot(dat_hamd_cor_collect, aes(x = network, y = r_value, fil
   ylab("Correlation") +
   theme_classic() + easy_move_legend(to = "top") +
   easy_text_size(13) + easy_remove_x_axis(what = "title")
+p_hamd_lpa_net
 
 #############################################################################
 #
@@ -316,14 +311,11 @@ p_hamd_lpa_net <- ggplot(dat_hamd_cor_collect, aes(x = network, y = r_value, fil
 ############################################################################
 
 layout_use <- "
-AAAADD
-AAAAEE
-BBBCCC
+AABBCC
+AABBDD
 "
-
-p_combine <- p_power264 + p_log_dot_somMot + 
-  p_log_dot_visual + p_dot_ATN_hamd + p_hamd_lpa_net + 
-  plot_layout(design = layout_use) +
+p_combine <- p_log_dot_somMot +  p_log_dot_visual + p_dot_ATN_hamd +  p_hamd_lpa_net + 
+  plot_layout(design = layout_use, width = c(1.05, 1.05, 1)) +
   plot_annotation(tag_levels = "A") &
   theme(text = element_text(size = 15), 
         axis.title.x = element_text(size =10),
@@ -333,7 +325,25 @@ p_combine <- p_power264 + p_log_dot_somMot +
         plot.tag = element_text(size = 18, face = "bold"))
 p_combine
 
-Cairo::Cairo(width = 2700, height = 2300, dpi = 300,
+# layout_use <- "
+# AAAADD
+# AAAAEE
+# BBBCCC
+# "
+# 
+# p_combine <- p_power264 + p_log_dot_somMot + 
+#   p_log_dot_visual + p_dot_ATN_hamd + p_hamd_lpa_net + 
+#   plot_layout(design = layout_use) +
+#   plot_annotation(tag_levels = "A") &
+#   theme(text = element_text(size = 15), 
+#         axis.title.x = element_text(size =10),
+#         axis.text =  element_text(size =13),
+#         axis.title.y = element_text(size = 10, face = "bold"),
+#         legend.title = element_text(size =13),
+#         plot.tag = element_text(size = 18, face = "bold"))
+# p_combine
+
+Cairo::Cairo(width = 2700, height = 1500, dpi = 300,
              file = "outputs/Anay2_plot_combine.png")
 print(p_combine)
 dev.off()

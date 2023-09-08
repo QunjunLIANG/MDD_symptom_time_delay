@@ -117,30 +117,6 @@ bruceR::GLM_summary(model_logi)
 # salience_mean      4.618 (2.710)  1.704  .088 .   [ -0.694,  9.929] 101.251 1.078
 # FPN_mean          -8.368 (3.434) -2.437  .015 *   [-15.099, -1.638]   0.000 1.169
 
-## model for A adn C LPA group ---------------------------------------------------------
-model_logi_ac <- glm(treatEff_recode ~  visual_mean + somMot_mean + ATN_mean +
-                    salience_mean + FPN_mean + DMN_mean +
-                    age + gender + QC_bold_fd_mean + HAMD_wave1_total, 
-                  data = dat_lm_logi %>% filter(LPAgroup == "A" | LPAgroup == "C"),
-                  family = binomial())
-bruceR::GLM_summary(model_logi_ac)
-# ─────────────────────────────────────────────────────────────────────────────────────
-# b     S.E.      z     p         [95% CI of b]        OR   VIF
-# ─────────────────────────────────────────────────────────────────────────────────────
-# salience_mean      10.556 ( 4.933)  2.140  .032 *   [  0.888, 20.225] 38413.158 1.122
-
-## model for B and D LPA group ---------------------------------------------------------
-model_logi_bd <- glm(treatEff_recode ~  visual_mean + somMot_mean + ATN_mean +
-                       salience_mean + FPN_mean + DMN_mean +
-                       age + gender + QC_bold_fd_mean  + HAMD_wave1_total, 
-                  data = dat_lm_logi %>% filter(LPAgroup == "B" | LPAgroup == "D"),
-                  family = binomial())
-bruceR::GLM_summary(model_logi_bd)
-# ──────────────────────────────────────────────────────────────────────────────────
-# b     S.E.      z     p         [95% CI of b]      OR   VIF
-# ──────────────────────────────────────────────────────────────────────────────────
-# FPN_mean          -14.031 ( 5.728) -2.450  .014 *   [-25.257, -2.805]   0.000 1.207
-
 ## model for B and D LPA group - somatomotor ---------------------------------------------------------
 dat_lm_logi %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
   bruceR::MANOVA(subID = "participant_id", dv = "somMot_mean", 
@@ -169,9 +145,7 @@ dat_lm_logi %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
 dat_lm_logi %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
   bruceR::MANOVA(subID = "participant_id", dv = "visual_mean", 
                  between = c("LPAgroup","treatEff_recode"),
-                 covariate = c("age","gender","QC_bold_fd_mean")) %>%
-  bruceR::EMMEANS("treatEff_recode", by = "LPAgroup")
-
+                 covariate = c("age","gender","QC_bold_fd_mean"))
 
 # visualize the logistic regression results
 
@@ -194,16 +168,48 @@ p_logstic <- dat_lm_logi %>%
   easy_text_size(15)
 p_logstic
 
+
+p_box_fpn <- dat_lm_logi %>% 
+  select(participant_id, LPAgroup, treatEff_recode, FPN_mean) %>%
+  ggplot(aes(x = LPAgroup, y = FPN_mean, fill = treatEff_recode)) +
+  geom_boxplot(alpha = .5) + 
+  xlab('LPA groups') + ylab("Time delay") + ggtitle("FPN") +
+  scale_fill_manual(values = c("#2E2A2BFF", "#CF4E9CFF")) + ylim(-.15, .15) +
+  theme_classic() + 
+  easy_add_legend_title("Response") +
+  easy_text_size(15)
+p_box_fpn
+
+p_box_somMot <- dat_lm_logi %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
+  select(participant_id, LPAgroup, treatEff_recode, somMot_mean) %>%
+  ggplot(aes(x = LPAgroup, y = somMot_mean, fill = treatEff_recode)) +
+  geom_boxplot(alpha = .5) + 
+  xlab('LPA groups') + ylab("Time delay") + ggtitle("somMot") +
+  scale_fill_manual(values = c("#2E2A2BFF", "#CF4E9CFF")) + ylim(-.15, .15) +
+  theme_classic() + 
+  easy_add_legend_title("Response") + easy_remove_legend() +
+  easy_text_size(15)  
+p_box_somMot
 ###############################################################################
 #
 # combine plots
 #
 ###############################################################################
 
-p_combine <- (p_baseHAMD + p_lpa_treatGroup) / p_logstic +
+# p_combine <- (p_baseHAMD + p_lpa_treatGroup) / p_logstic +
+#   plot_layout(heights = c(1,2), guides = "collect") +
+#   plot_annotation(tag_levels = "A") &
+#   theme(text = element_text(size = 15), 
+#         axis.title.x = element_text(size =10),
+#         axis.text =  element_text(size =13),
+#         axis.title.y = element_text(size = 10, face = "bold"),
+#         legend.title = element_text(size =13),
+#         plot.tag = element_text(size = 18, face = "bold"))
+
+p_combine <- ( p_lpa_treatGroup + p_box_somMot) / p_box_fpn +
   plot_layout(heights = c(1,2), guides = "collect") +
   plot_annotation(tag_levels = "A") &
-  theme(text = element_text(size = 15), 
+  theme(text = element_text(size = 15),
         axis.title.x = element_text(size =10),
         axis.text =  element_text(size =13),
         axis.title.y = element_text(size = 10, face = "bold"),
@@ -212,6 +218,6 @@ p_combine <- (p_baseHAMD + p_lpa_treatGroup) / p_logstic +
 
 p_combine
 
-Cairo::Cairo(file = "outputs/Anay3_combine_plot.png", width = 900, height = 800)
+Cairo::Cairo(file = "outputs/Anay3_combine_plot.png", width = 1900, height = 1800, dpi = 300)
 print(p_combine)
 dev.off()

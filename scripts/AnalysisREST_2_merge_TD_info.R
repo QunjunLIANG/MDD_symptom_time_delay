@@ -50,3 +50,21 @@ VIM::matrixplot(dat_td_net)
 dat_all <- dat_td_net %>% left_join(dat_info)
 
 rio::export(dat_all, file = "inputs/REST_2_timeDelay.xlsx")
+
+##########################################################################
+#
+# Summary the main and validation dataset
+#
+##########################################################################
+
+dat_validation <- rio::import("inputs/REST_2_timeDelay.xlsx") %>%
+  select(ID, age, gender, educations, HAMD, HAMA) %>%
+  rename(participant_id = "ID") %>%
+  mutate(dataset = "Validation")
+dat_main <- rio::import("inputs/Analysis1_subject_table.xlsx") %>%
+  select(participant_id, age, gender, educations, HAMD_wave1_total, HAMA_wave1_total) %>%
+  rename(HAMD = "HAMD_wave1_total", HAMA = "HAMA_wave1_total")%>%
+  mutate(dataset = "Main")
+dat_collect <- rbind(dat_validation, dat_main)
+
+table1::table1(~ age + gender + educations + HAMD + HAMA | dataset, data = dat_collect)

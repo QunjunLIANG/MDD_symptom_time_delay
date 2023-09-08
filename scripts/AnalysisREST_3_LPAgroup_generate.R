@@ -162,25 +162,26 @@ model_lpa
 p_lpa_line <- model_lpa$model_1_class_4$estimates %>%
   filter(Category == "Means") %>% 
   mutate(item = rep(paste0("item", formatC(1:17,width = 2, flag = "0")), times = 4)) %>%
-  mutate(LPAgroup = ifelse(Class == 1, "A", 
-                           ifelse(Class == 2, "B",
+  mutate(LPAgroup = ifelse(Class == 1, "B", 
+                           ifelse(Class == 2, "A",
                                   ifelse(Class == 3, "D", "C")))) %>% 
   ggplot(aes(x = item, y = Estimate, group = LPAgroup, color = LPAgroup)) +
   geom_line() + geom_point() +
   scale_color_lancet() +
   xlab("HAMD-17 items") +
   theme_classic() + easy_remove_x_axis(what = "title") +
-  easy_text_size(20) + easy_rotate_x_labels(angle = -45)
+  easy_text_size(13) + easy_rotate_x_labels(angle = -45)
 p_lpa_line
 
 p_lpa_bar <- model_lpa$model_1_class_4$dff %>% 
-  mutate(LPAgroup = ifelse(Class == 1, "A", 
-                           ifelse(Class == 2, "B",
+  mutate(LPAgroup = ifelse(Class == 1, "B", 
+                           ifelse(Class == 2, "A",
                                   ifelse(Class == 3, "D", "C")))) %>% 
   ggplot(aes(x = LPAgroup, fill = LPAgroup)) +
   geom_bar(width = .7, alpha = .5) +
   xlab("LPA subgroups") +
   scale_fill_lancet() + 
+  coord_flip() +
   theme_classic() + easy_text_size(15)
 p_lpa_bar
 
@@ -193,8 +194,8 @@ p_lpa_bar
 
 ## merge the data
 dat_mdd_factor_lpa <- model_lpa$model_1_class_4$dff %>% 
-  mutate(LPAgroup = ifelse(Class == 1, "A", 
-                           ifelse(Class == 2, "B",
+  mutate(LPAgroup = ifelse(Class == 1, "B", 
+                           ifelse(Class == 2, "A",
                                   ifelse(Class == 3, "D", "C")))) %>% 
   select(Class, LPAgroup) %>% 
   cbind(dat_mdd_factor)
@@ -228,6 +229,21 @@ bruceR::MANOVA(dat_mdd_factor_lpa, dv = "HAMD", between = "LPAgroup",
 # Results are averaged over the levels of: gender, educations
 # P-value adjustment: FDR method for 6 tests.
 
+## test the difference in HAMA score between B and D
+dat_mdd_factor_lpa %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
+  t.test(HAMA ~ LPAgroup, data = .)
+# Welch Two Sample t-test
+# 
+# data:  HAMA by LPAgroup
+# t = 3.6943, df = 23.82, p-value = 0.001147
+# alternative hypothesis: true difference in means between group B and group D is not equal to 0
+# 95 percent confidence interval:
+#   4.056386 14.335771
+# sample estimates:
+#   mean in group B mean in group D 
+# 29.11765        19.92157 
+
+
 ## visualize the among-group difference in HAMD --------------------------------------
 f <- dat_mdd_factor_lpa$LPAgroup
 f <- c(.7, 1.7, 2.7, 3.7)[as.integer(factor(f))]
@@ -247,13 +263,33 @@ p_lpa_boxplot <- ggplot(dat_mdd_factor_lpa, aes(x = LPAgroup, y = HAMD, fill = L
   easy_text_size(15)
 p_lpa_boxplot
 
+## visualize the among-group difference in HAMA --------------------------------------
+f1 <- dat_mdd_factor_lpa %>% filter(LPAgroup == "B" | LPAgroup == "D") %>% .$LPAgroup
+f1 <- c(.7, 1.7)[as.integer(factor(f1))]
+
+p_bd_hama <- ggplot(dat_mdd_factor_lpa %>% filter(LPAgroup == "B" | LPAgroup == "D"),
+                        aes(x = LPAgroup, y = HAMA)) +
+  geom_boxplot(alpha = .5, width = .3, fill = c("#ED0000FF","#0099B4FF")) +
+  geom_point(aes(x = f1), 
+             position = position_jitter(.02), size = 3, alpha =.35) +
+  geom_signif(annotations = "**", 
+              textsize = 7, vjust = .7,
+              y_position = 44, 
+              xmin = 1, 
+              xmax = 2,
+              tip_length = 0) +
+  scale_fill_lancet() + ylab("HAMA") + xlab("LPA subgroups") +
+  theme_classic() +
+  easy_text_size(15)
+p_bd_hama
+
 ##############################################################
 #
 # combine the plots
 #
 ##############################################################
 
-p_combine <- (plot_compa_hama + plot_compa_hamd)/p_lpa_line/(p_hama_hamd + p_lpa_bar + p_lpa_boxplot) +
+p_combine <- (plot_compa_hamd + plot_compa_hama + p_hama_hamd) / p_lpa_line / (p_lpa_bar + p_lpa_boxplot + p_bd_hama) +
   plot_layout(guides = "collect") +
   plot_annotation(tag_levels = "A")&
   theme(plot.tag = element_text(size = 18, face = "bold"))
