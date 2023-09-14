@@ -57,25 +57,25 @@ dat_mdd_factor <- dat_mdd %>% left_join(hamd_wave1)
 #
 #############################################################
 
-t.test(dat_cohor1$HAMD_wave1_total, dat_mdd_factor$HAMD)
-# data:  dat_cohor1$HAMD_wave1_total and dat_mdd_factor$HAMD
-# t = 7.0474, df = 224.89, p-value = 2.207e-11
-# alternative hypothesis: true difference in means is not equal to 0
-# 95 percent confidence interval:
-#   3.588614 6.374435
-# sample estimates:
-#   mean of x mean of y 
-# 26.35938  21.37785 
+data.frame(dataset = c(rep("main", times = nrow(dat_cohor1)),rep("validation", times = nrow(dat_mdd_factor))),
+           HAMD = c(dat_cohor1$HAMD_wave1_total, dat_mdd_factor$HAMD)) %>%
+  bruceR::TTEST(y = "HAMD", x = "dataset", digits = 3)
+# Results of t-test:
+# ────────────────────────────────────────────────────────────────────────────────
+# t  df     p         Difference [95% CI]      Cohen’s d [95% CI]      BF10
+# ────────────────────────────────────────────────────────────────────────────────
+# -7.254 432 <.001 *** -5.000 [-6.355, -3.645] -0.764 [-0.970, -0.557] 3.560e+09
+# ────────────────────────────────────────────────────────────────────────────────
 
-t.test(dat_cohor1$HAMA_wave1_total, dat_mdd_factor$HAMA)
-# data:  dat_cohor1$HAMA_wave1_total and dat_mdd_factor$HAMA
-# t = 3.4284, df = 255.79, p-value = 0.0007075
-# alternative hypothesis: true difference in means is not equal to 0
-# 95 percent confidence interval:
-#   1.496753 5.536892
-# sample estimates:
-#   mean of x mean of y 
-# 20.86719  17.35036 
+data.frame(dataset = c(rep("main", times = nrow(dat_cohor1)),rep("validation", times = nrow(dat_mdd_factor))),
+           HAMD = c(dat_cohor1$HAMA_wave1_total, dat_mdd_factor$HAMA)) %>%
+  bruceR::TTEST(y = "HAMD", x = "dataset", digits = 3)
+# Results of t-test:
+# ──────────────────────────────────────────────────────────────────────────────
+# t  df     p         Difference [95% CI]      Cohen’s d [95% CI]      BF10
+# ──────────────────────────────────────────────────────────────────────────────
+# -3.401 263 <.001 *** -3.517 [-5.553, -1.481] -0.418 [-0.660, -0.176] 3.013e+01
+# ──────────────────────────────────────────────────────────────────────────────
 
 ## plot the comparison between HAMD
 plot_compa_hamd <- data.frame(HAMD = c(dat_cohor1$HAMD_wave1_total,
@@ -231,17 +231,13 @@ bruceR::MANOVA(dat_mdd_factor_lpa, dv = "HAMD", between = "LPAgroup",
 
 ## test the difference in HAMA score between B and D
 dat_mdd_factor_lpa %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
-  t.test(HAMA ~ LPAgroup, data = .)
-# Welch Two Sample t-test
-# 
-# data:  HAMA by LPAgroup
-# t = 3.6943, df = 23.82, p-value = 0.001147
-# alternative hypothesis: true difference in means between group B and group D is not equal to 0
-# 95 percent confidence interval:
-#   4.056386 14.335771
-# sample estimates:
-#   mean in group B mean in group D 
-# 29.11765        19.92157 
+  bruceR::TTEST(y = "HAMA", x = "LPAgroup", digits = 3)
+# Results of t-test:
+# ──────────────────────────────────────────────────────────────────────────────────────────────
+# t df     p      Difference [95% CI]   Cohen’s d [95% CI]      BF10
+# ──────────────────────────────────────────────────────────────────────────────────────────────
+# HAMA: LPAgroup (D - B)  3.170 90  .002 **  4.800 [1.791, 7.808] 0.665 [0.248, 1.082] 1.600e+01
+# ──────────────────────────────────────────────────────────────────────────────────────────────
 
 
 ## visualize the among-group difference in HAMD --------------------------------------

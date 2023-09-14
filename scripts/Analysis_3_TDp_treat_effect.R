@@ -13,6 +13,7 @@ library(ggsci)
 library(ggsignif)
 library(patchwork)
 library(caret)
+library(ggsignif)
 
 # load the data
 dat_td   <- rio::import(file = "inputs/Analysis2_TDp_collection.xlsx") 
@@ -70,6 +71,15 @@ bruceR::MANOVA(data = dat_use, subID = "participant_id",
 # treatGroup       0.000 0.000   1 114 0.754  .387       .007 [.000, .053] .007
 # ─────────────────────────────────────────────────────────────────────────────
 
+# Chi-square test for treat group
+ggstatsplot::ggbarstats(dat_use, x = treatGroup, y = LPAgroup)
+
+table(dat_use %>% filter(LPAgroup == "D") %>% .$treatGroup) %>%
+  chisq.test()
+# Chi-squared test for given probabilities
+# 
+# data:  .
+# X-squared = 9.8462, df = 1, p-value = 0.001702
 
 f_log1 <- dat_use %>% .$treatGroup
 f_log1 <- c(.75, 1.75)[as.integer(factor(f_log1))]
@@ -148,7 +158,6 @@ dat_lm_logi %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
                  covariate = c("age","gender","QC_bold_fd_mean"))
 
 # visualize the logistic regression results
-
 dat_lm_logi$LPAgroup <- factor(dat_lm_logi$LPAgroup, levels = c("A","C","B","D"))
 label_use <- c(FPN_mean = "Fronto-parietal Net.",
                salience_mean = "Salience Net.",
@@ -164,7 +173,7 @@ p_logstic <- dat_lm_logi %>%
   xlab('LPA groups') + ylab("Mean time delay") +
   scale_fill_manual(values = c("#2E2A2BFF", "#CF4E9CFF")) + ylim(-.15, .15) +
   theme_bruce() + 
-  easy_add_legend_title("Response") +
+  bruceR::easy_add_legend_title("Response") +
   easy_text_size(15)
 p_logstic
 
@@ -184,8 +193,15 @@ p_box_somMot <- dat_lm_logi %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
   select(participant_id, LPAgroup, treatEff_recode, somMot_mean) %>%
   ggplot(aes(x = LPAgroup, y = somMot_mean, fill = treatEff_recode)) +
   geom_boxplot(alpha = .5) + 
+  geom_signif(annotations = c("*"), 
+              textsize = 7, 
+              vjust = .3,
+              y_position = .12, 
+              xmin = 0.8, xmax = 1.2,
+              tip_length = 0) +
   xlab('LPA groups') + ylab("Time delay") + ggtitle("somMot") +
   scale_fill_manual(values = c("#2E2A2BFF", "#CF4E9CFF")) + ylim(-.15, .15) +
+  coord_flip() +
   theme_classic() + 
   easy_add_legend_title("Response") + easy_remove_legend() +
   easy_text_size(15)  
@@ -196,18 +212,16 @@ p_box_somMot
 #
 ###############################################################################
 
-# p_combine <- (p_baseHAMD + p_lpa_treatGroup) / p_logstic +
-#   plot_layout(heights = c(1,2), guides = "collect") +
-#   plot_annotation(tag_levels = "A") &
-#   theme(text = element_text(size = 15), 
-#         axis.title.x = element_text(size =10),
-#         axis.text =  element_text(size =13),
-#         axis.title.y = element_text(size = 10, face = "bold"),
-#         legend.title = element_text(size =13),
-#         plot.tag = element_text(size = 18, face = "bold"))
+layout_use <- "
+AACC
+AACC
+BBBB
+BBBB
+BBBB
+"
 
-p_combine <- ( p_lpa_treatGroup + p_box_somMot) / p_box_fpn +
-  plot_layout(heights = c(1,2), guides = "collect") +
+p_combine <- p_lpa_treatGroup +  p_box_fpn + p_box_somMot +
+  plot_layout(design = layout_use, guides = "collect") +
   plot_annotation(tag_levels = "A") &
   theme(text = element_text(size = 15),
         axis.title.x = element_text(size =10),
@@ -218,6 +232,6 @@ p_combine <- ( p_lpa_treatGroup + p_box_somMot) / p_box_fpn +
 
 p_combine
 
-Cairo::Cairo(file = "outputs/Anay3_combine_plot.png", width = 1900, height = 1800, dpi = 300)
+Cairo::Cairo(file = "outputs/Anay3_combine_plot.png", width = 2300, height = 1800, dpi = 300)
 print(p_combine)
 dev.off()

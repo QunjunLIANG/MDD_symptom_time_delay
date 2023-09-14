@@ -16,6 +16,7 @@ library(ggridges)
 library(psych)
 library(brainconn)
 library(RColorBrewer)
+library(emmeans)
 library(ggeasy)
 library(ggsci)
 library(cowplot)
@@ -49,15 +50,6 @@ if (file.exists(outfile_name)) {
   VIM::matrixplot(dat_td)
 }
 
-
-## visualization
-dat_td_matrix <- dat_td[,2:214] %>% as.matrix()
-p_heatmap <- lattice::levelplot(dat_td_matrix %>% t(), 
-                   xlab = 'Atlas ROIs', ylab = 'participants')
-Cairo::Cairo(width = 800, height = 400, 
-             file = 'outputs/Anay2_heatmap_weighed_projection_map.png')
-print(p_heatmap)
-dev.off()
 
 #############################################################################
 #
@@ -97,20 +89,10 @@ dev.off()
 
 #############################################################################
 #
-# Testing TD difference between sever and moderated groups
+# Testing TD difference between cluster B and D with ANOVA
 #
 ############################################################################
 
-# testing network-based difference between sever and moderated groups ---------------------
-dat_td %>% 
-  select(participant_id, serverity, ends_with("mean"), QC_bold_fd_mean, age, gender, educations) %>%
-  select(-TD_mean) %>%
-  pivot_longer(cols = 3:8, names_to = "network", values_to = "td") %>%
-  bruceR::MANOVA(subID = "participant_id", dv = "td", 
-                 between = "serverity", within = 'network',
-                 covariate = c("age","gender","QC_bold_fd_mean"))
-
-# focusing on B and D ------------------------------------------------------
 dat_td %>% filter(serverity == "server") %>%
   select(participant_id, LPAgroup, ends_with("mean"), QC_bold_fd_mean, age, gender, educations) %>%
   select(-TD_mean) %>%
@@ -118,7 +100,7 @@ dat_td %>% filter(serverity == "server") %>%
   bruceR::MANOVA(subID = "participant_id", dv = "td", 
                  between = "LPAgroup", within = 'network',
                  covariate = c("age","gender","QC_bold_fd_mean"))%>%
-  bruceR::EMMEANS(effect = "LPAgroup", by = "network")
+  bruceR::EMMEANS(effect = "LPAgroup", by = "network", p.adjust = "fdr")
 # ───────────────────────────────────────────────────────────────────────────────────────
 # MS   MSE df1 df2     F     p     η²p [90% CI of η²p]  η²G
 # ───────────────────────────────────────────────────────────────────────────────────────
@@ -216,93 +198,139 @@ p_log_dot_visual
 dat_use <- dat_td %>% left_join(sbj_info)
 rio::export(dat_use, file = outfile_name)
 
-## HAMD wave1 total score
-cor_mat <- dat_use %>% 
-  select(HAMD_wave1_total, ends_with("mean")) %>%
-  select(1:8) %>%
-  bruceR::Corr(p.adjust = "fdr")
-# Pearson's r and 95% confidence intervals:
-# p values and 95% CIs are adjusted using the "fdr" method.
-# ─────────────────────────────────────────────────────────────────
-#                                     r      [95% CI]     p       N
-# ─────────────────────────────────────────────────────────────────
-# HAMD_wave1_total-TD_mean        -0.01 [-0.28, 0.26]  .929     128
-# HAMD_wave1_total-somMot_mean    -0.17 [-0.42, 0.11]  .153     128
-# HAMD_wave1_total-visual_mean    -0.15 [-0.40, 0.13]  .218     128
-# HAMD_wave1_total-salience_mean   0.07 [-0.21, 0.33]  .668     128
-# HAMD_wave1_total-ATN_mean        0.23 [-0.05, 0.47]  .044 *   128
+## linear model for the predictive effect of TD in sensory networks on depression factor 
+model_lm <- dat_use %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
+  mutate(across(is.numeric, scale, scale = F)) %>%
+  lm(HAMD_wave1_total ~ somMot_mean*LPAgroup + visual_mean*LPAgroup + 
+       age + gender + QC_bold_fd_mean, data = .)
+bruceR::GLM_summary(model_lm) # check the results
+# ──────────────────────────────────────────────────────────────────────────────────────────
+# β    S.E.      t     p        [95% CI of β] r(partial) r(part)
+# ──────────────────────────────────────────────────────────────────────────────────────────
+# somMot_mean             0.023 (0.145)  0.162  .872     [-0.266,  0.313]      0.021   0.018
+# LPAgroupD               0.060 (0.131)  0.457  .650     [-0.202,  0.321]      0.058   0.051
+# visual_mean             0.054 (0.196)  0.273  .786     [-0.338,  0.445]      0.035   0.031
+# age                     0.232 (0.119)  1.953  .055 .   [-0.005,  0.469]      0.243   0.219
+# gendermale              0.107 (0.125)  0.857  .395     [-0.143,  0.358]      0.109   0.096
+# QC_bold_fd_mean        -0.064 (0.125) -0.514  .609     [-0.314,  0.186]     -0.066  -0.058
+# somMot_mean:LPAgroupD  -0.312 (0.143) -2.175  .033 *   [-0.598, -0.025]     -0.268  -0.244
+# LPAgroupD:visual_mean  -0.154 (0.197) -0.779  .439     [-0.548,  0.241]     -0.099  -0.087
+# ──────────────────────────────────────────────────────────────────────────────────────────
 
-## correlation between SMN ,VN and HAMD depression subfactor in group B and D
-dat_hamd_cor_lpa_SMN <- data.frame()
-for (lpa in c("B","D")) {
-  cor_tmp <- dat_use %>% filter(LPAgroup == lpa) %>%
-    cor.test(~ HAMD_wave1_depression + somMot_mean, data = .)
-  dat_tmp <- data.frame(
-    LPAgroup = lpa,
-    network = "somMot",
-    r_value = cor_tmp$estimate,
-    conf_low = cor_tmp$conf.int[1],
-    conf_up = cor_tmp$conf.int[2],
-    p_value = cor_tmp$p.value
-  )
-  dat_hamd_cor_lpa_SMN <- rbind(dat_hamd_cor_lpa_SMN, dat_tmp)
-}
-dat_hamd_cor_lpa_SMN["p_fdr"] <- p.adjust(dat_hamd_cor_lpa_SMN$p_value, method = 'fdr')
-# LPAgroup    r_value   conf_low    conf_up     p_value      p_fdr
-# cor         B  0.1202648 -0.1831550  0.4027648 0.436799377 0.43679938
-# cor1        D -0.5140404 -0.7517149 -0.1581855 0.007223762 0.01444752
+### post-hoc analysis for the predictive effect of somMot
+emtrends(model_lm, pairwise ~ LPAgroup, var="somMot_mean")
+# $emtrends
+# LPAgroup somMot_mean.trend   SE df lower.CL upper.CL
+# B                     1.98 12.2 61    -22.5    26.47
+# D                   -45.86 18.9 61    -83.8    -7.97
+# 
+# Results are averaged over the levels of: gender 
+# Confidence level used: 0.95 
+# 
+# $contrasts
+# contrast estimate SE df t.ratio p.value
+# B - D        47.8 22 61   2.175  0.0335
+# 
+# Results are averaged over the levels of: gender 
 
-dat_hamd_cor_lpa_VN <- data.frame()
-for (lpa in c("B","D")) {
-  cor_tmp <- dat_use %>% filter(LPAgroup == lpa) %>%
-    cor.test(~ HAMD_wave1_depression + visual_mean, data = .)
-  dat_tmp <- data.frame(
-    LPAgroup = lpa,
-    network = "visual",
-    r_value = cor_tmp$estimate,
-    conf_low = cor_tmp$conf.int[1],
-    conf_up = cor_tmp$conf.int[2],
-    p_value = cor_tmp$p.value
-  )
-  dat_hamd_cor_lpa_VN <- rbind(dat_hamd_cor_lpa_VN, dat_tmp)
-}
-dat_hamd_cor_lpa_VN["p_fdr"] <- p.adjust(dat_hamd_cor_lpa_VN$p_value, method = 'fdr')
-# LPAgroup    r_value   conf_low     conf_up    p_value      p_fdr
-# cor         B  0.0612300 -0.2400133  0.35171686 0.69296675 0.69296675
-# cor1        D -0.4113547 -0.6889328 -0.02855228 0.03681651 0.07363302
-
-dat_hamd_cor_collect <- rbind(
-  dat_hamd_cor_lpa_SMN, dat_hamd_cor_lpa_VN
-)
-# LPAgroup network    r_value   conf_low     conf_up     p_value      p_fdr
-# cor          B  somMot  0.1202648 -0.1831550  0.40276476 0.436799377 0.43679938
-# cor1         D  somMot -0.5140404 -0.7517149 -0.15818545 0.007223762 0.01444752
-# cor2         B  visual  0.0612300 -0.2400133  0.35171686 0.692966745 0.69296675
-# cor11        D  visual -0.4113547 -0.6889328 -0.02855228 0.036816508 0.07363302
-
-#############################################################################
+############################################################################
 #
 # Plot the correlation results
 #
 ############################################################################
 
-## plot the ATN-HAMD total score correlation 
-p_dot_ATN_hamd <- ggplot(dat_use, aes(y = ATN_mean, x = HAMD_wave1_total)) +
-  geom_point(size = 3, alpha =.6) +
-  geom_smooth(method = 'lm') + 
-  xlab("HAMD score") + ylab("Attention network") +
-  theme_classic() + easy_text_size(13)
-p_dot_ATN_hamd
-
 ## plot the LPA group specific correlation
-p_hamd_lpa_net <- ggplot(dat_hamd_cor_collect, aes(x = network, y = r_value, fill = LPAgroup)) +
-  geom_bar(stat = "identity", position = position_dodge2()) +
-  scale_fill_manual(values = c("#ED0000FF","#0099B4FF")) +
-  geom_hline(yintercept = 0) +
-  ylab("Correlation") +
-  theme_classic() + easy_move_legend(to = "top") +
-  easy_text_size(13) + easy_remove_x_axis(what = "title")
-p_hamd_lpa_net
+p_hamd_lpa_cor <- dat_use %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
+ggplot(., aes(x = somMot_mean, y = HAMD_wave1_total, color = LPAgroup)) +
+  geom_point(size = 3, alpha = .4) +
+  geom_smooth(method = 'lm') +
+  scale_color_manual(values = c("#ED0000FF","#0099B4FF")) +
+  ylab("HAMD score") + xlab("time delay") +
+  theme_classic() + 
+  easy_text_size(13) + easy_add_legend_title("Subtypes")
+p_hamd_lpa_cor
+
+############################################################################
+#
+# treatment response prediction with logistic regression
+#
+############################################################################
+
+## construct the data for modelling
+dat_lm_logi <- dat_use %>%
+  mutate(treatEff_recode = ifelse(treatGroup == "positive", 1, 0))
+dat_lm_logi$treatEff_recode <- factor(dat_lm_logi$treatEff_recode, levels = c(0,1),
+                                      labels = c("negative","positive"))
+
+## build the model
+model_logi <- dat_lm_logi %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
+  mutate(across(is.numeric, scale, scale = F)) %>%
+  glm(treatEff_recode ~  somMot_mean*LPAgroup + visual_mean*LPAgroup + 
+        age + gender + QC_bold_fd_mean + HAMD_wave1_total, 
+      data = .,
+      family = binomial())
+
+## check the result
+bruceR::GLM_summary(model_logi)
+# Model Fit:
+# AIC = 86.331
+# BIC = 108.816
+# χ²(9) = 20.82, p = 0.013 *  
+#   ─────── Pseudo-R² ───────
+# McFadden’s R²   = 0.23887 (= 1 - logLik(model)/logLik(null.model))
+# Nagelkerke’s R² = 0.36127 (= Cragg-Uhler’s R², adjusts Cox & Snell’s)
+# 
+# Unstandardized Coefficients:
+#   Outcome Variable: treatEff_recode (family: binomial; link function: logit)
+# N = 70
+# ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+# b     S.E.      z     p          [95% CI of b]                              OR   VIF
+# ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+# (Intercept)              0.551 ( 0.453)  1.217  .224     [ -0.337,   1.438]                           1.735      
+# somMot_mean            -13.473 ( 7.978) -1.689  .091 .   [-29.110,   2.164]                           0.000 1.815
+# LPAgroupD                1.900 ( 1.352)  1.406  .160     [ -0.749,   4.549]                           6.685 3.863
+# visual_mean             10.095 ( 9.353)  1.079  .280     [ -8.236,  28.427]                       24225.727 1.756
+# age                      0.047 ( 0.029)  1.614  .107     [ -0.010,   0.105]                           1.048 1.222
+# gendermale               0.750 ( 0.878)  0.854  .393     [ -0.970,   2.471]                           2.117 1.378
+# QC_bold_fd_mean        -20.584 (10.913) -1.886  .059 .   [-41.973,   0.804]                           0.000 1.257
+# HAMD_wave1_total        -0.014 ( 0.080) -0.181  .857     [ -0.170,   0.142]                           0.986 1.318
+# somMot_mean:LPAgroupD   61.522 (29.122)  2.113  .035 *   [  4.444, 118.601] 523405233545061704782840022.000 5.326
+# LPAgroupD:visual_mean  -39.845 (20.533) -1.940  .052 .   [-80.090,   0.400]                           0.000 2.611
+# ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+## post-hoc anlaysis
+emtrends(model_logi, pairwise ~ LPAgroup, var="somMot_mean")
+# $emtrends
+# LPAgroup somMot_mean.trend    SE  df asymp.LCL asymp.UCL
+# B                    -13.5  7.98 Inf    -29.11      2.16
+# D                     48.0 27.78 Inf     -6.39    102.49
+# 
+# Results are averaged over the levels of: gender 
+# Confidence level used: 0.95 
+# 
+# $contrasts
+# contrast estimate   SE  df z.ratio p.value
+# B - D       -61.5 29.1 Inf  -2.113  0.0346
+# 
+# Results are averaged over the levels of: gender 
+
+############################################################################
+#
+# plot the result for prediction
+#
+############################################################################
+
+p_box_somMot <- dat_lm_logi %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
+  select(participant_id, LPAgroup, treatEff_recode, somMot_mean) %>%
+  ggplot(aes(x = LPAgroup, y = somMot_mean, fill = treatEff_recode)) +
+  geom_boxplot(alpha = .5) + 
+  xlab('Subtypes') + ylab("Time delay") + ggtitle("Somatomotor") +
+  scale_fill_manual(values = c("#2E2A2BFF", "#CF4E9CFF")) + ylim(-.15, .15) +
+  theme_classic() + 
+  easy_add_legend_title("Response") +
+  easy_text_size(15)  
+p_box_somMot
+
 
 #############################################################################
 #
@@ -310,40 +338,11 @@ p_hamd_lpa_net
 #
 ############################################################################
 
-layout_use <- "
-AABBCC
-AABBDD
-"
-p_combine <- p_log_dot_somMot +  p_log_dot_visual + p_dot_ATN_hamd +  p_hamd_lpa_net + 
-  plot_layout(design = layout_use, width = c(1.05, 1.05, 1)) +
-  plot_annotation(tag_levels = "A") &
-  theme(text = element_text(size = 15), 
-        axis.title.x = element_text(size =10),
-        axis.text =  element_text(size =13),
-        axis.title.y = element_text(size = 10, face = "bold"),
-        legend.title = element_text(size =13),
-        plot.tag = element_text(size = 18, face = "bold"))
+p_combine <- p_log_dot_somMot + p_log_dot_visual + p_hamd_lpa_cor + p_box_somMot +
+  plot_layout(guides = "collect")
 p_combine
 
-# layout_use <- "
-# AAAADD
-# AAAAEE
-# BBBCCC
-# "
-# 
-# p_combine <- p_power264 + p_log_dot_somMot + 
-#   p_log_dot_visual + p_dot_ATN_hamd + p_hamd_lpa_net + 
-#   plot_layout(design = layout_use) +
-#   plot_annotation(tag_levels = "A") &
-#   theme(text = element_text(size = 15), 
-#         axis.title.x = element_text(size =10),
-#         axis.text =  element_text(size =13),
-#         axis.title.y = element_text(size = 10, face = "bold"),
-#         legend.title = element_text(size =13),
-#         plot.tag = element_text(size = 18, face = "bold"))
-# p_combine
-
-Cairo::Cairo(width = 2700, height = 1500, dpi = 300,
+Cairo::Cairo(width = 2700, height = 2300, dpi = 300,
              file = "outputs/Anay2_plot_combine.png")
 print(p_combine)
 dev.off()

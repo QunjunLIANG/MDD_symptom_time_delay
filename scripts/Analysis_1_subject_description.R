@@ -103,16 +103,15 @@ table1::table1(data = dat_mdd_factor,
 #
 #############################################################
 
-t.test(dat_mdd_factor$HAMD_wave1_total, dat_mdd_factor$HAMD_wave3_total,)
-# data:  dat_mdd_factor$HAMD_wave1_total and dat_mdd_factor$HAMD_wave3_total
-# t = 19.281, df = 235.96, p-value < 2.2e-16
-# alternative hypothesis: true difference in means is not equal to 0
-# 95 percent confidence interval:
-#   13.81438 16.95873
-# sample estimates:
-#   mean of x mean of y 
-# 27.29412  11.90756 
-
+dat_mdd_factor %>% select(participant_id, HAMD_wave1_total, HAMD_wave3_total) %>%
+  pivot_longer(cols = 2:3, names_to = "wave", values_to = "HAMD") %>%
+  bruceR::TTEST(y = "HAMD", x = "wave")
+# Results of t-test:
+# ────────────────────────────────────────────────────────────────────────────────────────
+# t  df     p         Difference [95% CI]   Cohen’s d [95% CI]     BF10
+# ────────────────────────────────────────────────────────────────────────────────────────
+# HAMD: wave -18.22 254 <.001 *** -14.88 [-16.49, -13.27] -2.28 [-2.52, -2.03] 2.35e+44
+# ────────────────────────────────────────────────────────────────────────────────────────
 
 # result visualization
 ComparisonDotBarChart <- function(data, ylab_title, sig_y_position,
@@ -194,6 +193,7 @@ dat_mdd_factor_treat %>% filter(!is.na(HAMD_wave3_Date)) %>%
   table()
 # negative positive 
 # 52       67 
+67/(52+67) * 100
 
 ## obtain colors
 p_treteffect_bar <- dat_mdd_factor_treat %>%
@@ -305,6 +305,17 @@ bruceR::MANOVA(
 # age         24.506 18.557   1 122  1.321  .253       .011 [.000, .060] .011
 # gender      14.368 18.557   1 122  0.774  .381       .006 [.000, .050] .006
 # ───────────────────────────────────────────────────────────────────────────
+# Pairwise Comparisons of "LPAgroup":
+# ───────────────────────────────────────────────────────────────────────
+# Contrast Estimate    S.E.  df      t     p     Cohen’s d [95% CI of d]
+# ───────────────────────────────────────────────────────────────────────
+# B - A   10.007 (1.116) 122  8.965 <.001 ***  2.323 [ 1.628,  3.018]
+# C - A    0.542 (1.159) 122  0.468 1.000      0.126 [-0.596,  0.847]
+# C - B   -9.465 (0.980) 122 -9.655 <.001 *** -2.197 [-2.808, -1.587]
+# D - A   12.092 (1.244) 122  9.721 <.001 ***  2.807 [ 2.033,  3.581]
+# D - B    2.084 (1.094) 122  1.905  .355      0.484 [-0.197,  1.165]
+# D - C   11.550 (1.140) 122 10.132 <.001 ***  2.681 [ 1.971,  3.391]
+# ───────────────────────────────────────────────────────────────────────
 
 ## boxlplot to show the HAMD wave1 difference
 f <- dat_mdd_factor_treat_lpa$LPAgroup
@@ -326,16 +337,15 @@ p_lpa_hamd_diff <- ggplot(dat_mdd_factor_treat_lpa, aes(x = LPAgroup, y = HAMD_w
 p_lpa_hamd_diff
 
 ## HAMA difference between B and D --------------------------------
-dat_mdd_factor_treat_lpa %>% filter(serverity == "server") %>%
-t.test(HAMA_wave1_total ~ LPAgroup , data = .)
-# data:  HAMA_wave1_total by LPAgroup
-# t = -2.6468, df = 48.926, p-value = 0.0109
-# alternative hypothesis: true difference in means between group B and group D is not equal to 0
-# 95 percent confidence interval:
-#   -7.515368 -1.028268
-# sample estimates:
-#   mean in group B mean in group D 
-# 22.56818        26.84000 
+dat_mdd_factor_treat_lpa %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
+  select(participant_id, LPAgroup, HAMA_wave1_total) %>%
+  bruceR::TTEST(y = "HAMA_wave1_total", x = "LPAgroup", digits = 3)
+# Results of t-test:
+# ────────────────────────────────────────────────────────────────────────
+# t df     p      Difference [95% CI]   Cohen’s d [95% CI]      BF10
+# ────────────────────────────────────────────────────────────────────────
+# 2.372 68  .021 *   3.816 [0.606, 7.027] 0.587 [0.093, 1.080] 2.633e+00
+# ────────────────────────────────────────────────────────────────────────
 
 dat_hama <- dat_mdd_factor_treat_lpa %>% filter(serverity == "server")
 f_1 <- dat_hama$LPAgroup
