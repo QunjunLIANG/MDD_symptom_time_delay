@@ -14,10 +14,8 @@ library(scales)
 library(cowplot)
 
 # load the data
-dat_td <- rio::import("inputs/REST_3_LPAgroup.xlsx")
-
-# summary the left subject with TD 
-table1::table1(~ gender + age + educations + center | LPAgroup, data=dat_td)
+dat_td <- rio::import("inputs/REST_3_LPAgroup.xlsx") %>%
+  mutate(LPAgroup = factor(LPAgroup, levels = c("severe","NA-MDD","mild","A-MDD")))
 
 ###############################################################################
 #
@@ -25,54 +23,37 @@ table1::table1(~ gender + age + educations + center | LPAgroup, data=dat_td)
 #
 ###############################################################################
 
-dat_td %>%
-  select(ID, LPAgroup, ends_with("mean"), age, gender, educations, fd_mean) %>%
-  pivot_longer(cols = 3:9, names_to = "network", values_to = "td") %>%
-  bruceR::MANOVA(subID = "ID", dv = 'td', between = "LPAgroup", within = "network",
-                 covariate = c("age","gender","fd_mean"), sph.correction="GG") %>%
-  bruceR::EMMEANS(effect = "LPAgroup", by = "network",p.adjust =  'fdr')
-# ─────────────────────────────────────────────────────────────────────────────────────────
-# MS   MSE    df1      df2      F     p     η²p [90% CI of η²p]  η²G
-# ─────────────────────────────────────────────────────────────────────────────────────────
-# LPAgroup * network  0.011 0.006 13.268 1326.807  1.738  .047 *     .017 [.000, .020] .014
-# ─────────────────────────────────────────────────────────────────────────────────────────
+## testing the difference in network
+dat_td %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>%
+  select(ID, ends_with("mean"), LPAgroup, age, gender, fd_mean) %>%
+  pivot_longer(cols = 3:7, names_to = "network", values_to = "td") %>%
+  bruceR::MANOVA(subID = "ID", dv = 'td', between = "LPAgroup",
+                 within = "network",
+                 covariate = c("age","gender","fd_mean")) %>%
+  bruceR::EMMEANS(effect = "LPAgroup", by = "network")
+# ────────────────────────────────────────────────────────────────────────────────
+#                         MS MSE df1 df2     F     p     η²p [90% CI of η²p]  η²G
+# ────────────────────────────────────────────────────────────────────────────────
+# LPAgroup            0.002 0.006   1 234 0.315  .575       .001 [.000, .020] .000
+# age                 0.047 0.006   1 234 7.370  .007 **    .031 [.005, .075] .007
+# gender              0.002 0.006   1 234 0.280  .597       .001 [.000, .019] .000
+# fd_mean             0.010 0.006   1 234 1.579  .210       .007 [.000, .035] .001
+# network             0.058 0.006   4 936 9.633 <.001 ***   .040 [.019, .059] .032
+# LPAgroup * network  0.014 0.006   4 936 2.396  .049 *     .010 [.000, .020] .008
+# age * network       0.028 0.006   4 936 4.555  .001 **    .019 [.005, .033] .015
+# gender * network    0.004 0.006   4 936 0.677  .608       .003 [.000, .007] .002
+# fd_mean * network   0.011 0.006   4 936 1.795  .128       .008 [.000, .016] .006
+# ────────────────────────────────────────────────────────────────────────────────
 # Pairwise Comparisons of "LPAgroup":
-#   ─────────────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────────────
 # Contrast     "network" Estimate    S.E.  df      t     p     Cohen’s d [95% CI of d]
 # ─────────────────────────────────────────────────────────────────────────────────────
-# B - A ATN_mean        -0.033 (0.013) 300 -2.493  .019 *   -0.350 [-0.722,  0.023]
-# C - A ATN_mean        -0.068 (0.017) 300 -3.972 <.001 *** -0.719 [-1.199, -0.238]
-# C - B ATN_mean        -0.035 (0.014) 300 -2.423  .019 *   -0.369 [-0.774,  0.036]
-# D - B ATN_mean         0.024 (0.009) 300  2.529  .019 *    0.250 [-0.013,  0.513]
-# D - C ATN_mean         0.058 (0.014) 300  4.082 <.001 ***  0.620 [ 0.216,  1.023]
-# B - A TD_mean         -0.013 (0.005) 300 -2.438  .033 *   -0.133 [-0.278,  0.012]
-# C - A TD_mean         -0.023 (0.007) 300 -3.452  .004 **  -0.243 [-0.431, -0.056]
-# C - B TD_mean         -0.010 (0.006) 300 -1.856  .077 .   -0.110 [-0.268,  0.048]
-# D - A TD_mean         -0.009 (0.005) 300 -1.903  .077 .   -0.101 [-0.242,  0.040]
-# D - C TD_mean          0.013 (0.006) 300  2.408  .033 *    0.142 [-0.015,  0.300]
+# D - B ATN_mean         0.025 (0.010) 234  2.600  .010 **   0.231 [ 0.056,  0.407]
+# D - B FPN_mean         0.006 (0.011) 234  0.522  .602      0.052 [-0.144,  0.247]
+# D - B salience_mean   -0.000 (0.011) 234 -0.034  .973     -0.004 [-0.211,  0.204]
+# D - B somMot_mean      0.003 (0.011) 234  0.294  .769      0.030 [-0.173,  0.234]
+# D - B visual_mean     -0.020 (0.009) 234 -2.187  .030 *   -0.186 [-0.354, -0.018]
 # ─────────────────────────────────────────────────────────────────────────────────────
-
-dat_td %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
-  select(ID, LPAgroup, ends_with("mean"), age, gender, educations, fd_mean) %>%
-  pivot_longer(cols = 3:9, names_to = "network", values_to = "td") %>%
-  bruceR::MANOVA(subID = "ID", dv = 'td', between = "LPAgroup", within = "network",
-                 covariate = c("age","gender","fd_mean"))%>%
-  bruceR::EMMEANS(effect = "LPAgroup", by = "network",p.adjust =  'fdr')
-# ─────────────────────────────────────────────────────────────────────────────────
-# MS   MSE df1  df2     F     p     η²p [90% CI of η²p]  η²G
-# ─────────────────────────────────────────────────────────────────────────────────
-# LPAgroup * network  0.009 0.004   6 1398 2.107  .050 *     .009 [.000, .015] .007
-# ─────────────────────────────────────────────────────────────────────────────────
-# Pairwise Comparisons of "LPAgroup":
-#   ─────────────────────────────────────────────────────────────────────────────────────
-# Contrast     "network" Estimate    S.E.  df      t     p     Cohen’s d [95% CI of d]
-# ─────────────────────────────────────────────────────────────────────────────────────
-# D - B ATN_mean         0.024 (0.010) 233  2.441  .015 *    0.257 [ 0.050,  0.463]
-# D - B visual_mean     -0.021 (0.009) 233 -2.273  .024 *   -0.223 [-0.417, -0.030]
-# ─────────────────────────────────────────────────────────────────────────────────────
-# Pooled SD for computing Cohen’s d: 0.093
-# Results are averaged over the levels of: gender
-# No need to adjust p values.
 
 ###############################################################################
 #
@@ -81,64 +62,38 @@ dat_td %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
 ###############################################################################
 
 ## HAMD wave1 total score
-cor_mat <- dat_td %>% 
+cor_mat <- dat_td %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
   select(HAMD, ends_with("mean")) %>%
-  select(1:8) %>%
+  select(1:8) %>% select(-TD_mean) %>%
   bruceR::Corr(p.adjust = "fdr")
-# ─────────────────────────────────────────────────────────────
-# r       [95% CI]     p       N
-# ─────────────────────────────────────────────────────────────
-# HAMD-TD_mean                0.17 [-0.01,  0.34]  .007 **  307
-# HAMD-somMot_mean            0.09 [-0.08,  0.27]  .166     307
-# HAMD-visual_mean           -0.02 [-0.20,  0.16]  .790     307
-# HAMD-salience_mean         -0.03 [-0.20,  0.15]  .784     307
-# HAMD-ATN_mean               0.24 [ 0.06,  0.40] <.001 *** 307
-# HAMD-FPN_mean               0.02 [-0.15,  0.20]  .790     307
-# HAMD-DMN_mean               0.06 [-0.11,  0.24]  .388     307
+# ────────────────────────────────────────────────────────────
+#                               r      [95% CI]     p       N
+# ────────────────────────────────────────────────────────────
+# HAMD-somMot_mean            0.02 [-0.18, 0.21]  .796     239
+# HAMD-visual_mean           -0.09 [-0.28, 0.10]  .297     239
+# HAMD-salience_mean         -0.05 [-0.24, 0.15]  .622     239
+# HAMD-ATN_mean               0.18 [-0.01, 0.36]  .029 *   239
+# HAMD-FPN_mean              -0.06 [-0.25, 0.13]  .542     239
+# HAMD-DMN_mean               0.04 [-0.16, 0.23]  .670     239
 
-
-## correlation between SMN ,VN and HAMD depression subfactor in group B and D
-dat_hamd_cor_lpa_SMN <- data.frame()
-for (lpa in c("B","D")) {
-  cor_tmp <- dat_td %>% filter(LPAgroup == lpa) %>%
-    cor.test(~ HAMD_depression + somMot_mean, data = .)
-  dat_tmp <- data.frame(
-    LPAgroup = lpa,
-    network = "somMot",
-    r_value = cor_tmp$estimate,
-    conf_low = cor_tmp$conf.int[1],
-    conf_up = cor_tmp$conf.int[2],
-    p_value = cor_tmp$p.value
-  )
-  dat_hamd_cor_lpa_SMN <- rbind(dat_hamd_cor_lpa_SMN, dat_tmp)
-}
-dat_hamd_cor_lpa_SMN["p_fdr"] <- p.adjust(dat_hamd_cor_lpa_SMN$p_value, method = 'fdr')
-
-dat_hamd_cor_lpa_VN <- data.frame()
-for (lpa in c("B","D")) {
-  cor_tmp <- dat_td %>% filter(LPAgroup == lpa) %>%
-    cor.test(~ HAMD_depression + visual_mean, data = .)
-  dat_tmp <- data.frame(
-    LPAgroup = lpa,
-    network = "visual",
-    r_value = cor_tmp$estimate,
-    conf_low = cor_tmp$conf.int[1],
-    conf_up = cor_tmp$conf.int[2],
-    p_value = cor_tmp$p.value
-  )
-  dat_hamd_cor_lpa_VN <- rbind(dat_hamd_cor_lpa_VN, dat_tmp)
-}
-dat_hamd_cor_lpa_VN["p_fdr"] <- p.adjust(dat_hamd_cor_lpa_VN$p_value, method = 'fdr')
-
-dat_hamd_cor_collect <- rbind(
-  dat_hamd_cor_lpa_SMN, dat_hamd_cor_lpa_VN
-)
-dat_hamd_cor_collect
-# LPAgroup network     r_value    conf_low    conf_up    p_value     p_fdr
-# cor          B  somMot  0.01855429 -0.17014124 0.20593727 0.84813729 0.8481373
-# cor1         D  somMot -0.03626959 -0.20782107 0.13744649 0.68322368 0.8481373
-# cor2         B  visual  0.16105056 -0.02789624 0.33888611 0.09433279 0.1045477
-# cor11        D  visual -0.14357039 -0.30876228 0.03002922 0.10454769 0.1045477
+## linear model for the predictive effect of TD in sensory networks on depression factor 
+model_lm <- dat_td %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>%
+  mutate_at(vars(somMot_mean, visual_mean), ~ scale(., scale = F)) %>% 
+  lm(HAMD ~ somMot_mean*LPAgroup + visual_mean*LPAgroup + 
+       age + gender + fd_mean, data = .)
+bruceR::GLM_summary(model_lm) # check the results
+# ─────────────────────────────────────────────────────────────────────────────────────────────
+# β    S.E.      t     p       [95% CI of β] r(partial) r(part)
+# ─────────────────────────────────────────────────────────────────────────────────────────────
+# somMot_mean                 0.084 (0.093)  0.899  .370     [-0.100, 0.267]      0.059   0.054
+# LPAgroupA-MDD               0.371 (0.063)  5.876 <.001 *** [ 0.247, 0.495]      0.361   0.354
+# visual_mean                 0.049 (0.097)  0.501  .617     [-0.143, 0.241]      0.033   0.030
+# age                         0.060 (0.066)  0.905  .367     [-0.070, 0.189]      0.060   0.055
+# gendermale                  0.001 (0.061)  0.015  .988     [-0.119, 0.121]      0.001   0.001
+# fd_mean                    -0.059 (0.061) -0.977  .330     [-0.179, 0.060]     -0.064  -0.059
+# somMot_mean:LPAgroupA-MDD  -0.049 (0.092) -0.533  .594     [-0.230, 0.132]     -0.035  -0.032
+# LPAgroupA-MDD:visual_mean  -0.134 (0.098) -1.374  .171     [-0.327, 0.058]     -0.090  -0.083
+# ─────────────────────────────────────────────────────────────────────────────────────────────
 
 ###############################################################################
 #

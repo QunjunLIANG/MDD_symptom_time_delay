@@ -23,6 +23,7 @@ library(cowplot)
 library(scales)
 library(ggsignif)
 library(patchwork)
+library(sjPlot)
 source('scripts/function_ObtainNetID.R')
 source('scripts/function_ObtainBrainData.R')
 source('scripts/function_AddNetworkScore.R')
@@ -44,12 +45,16 @@ if (file.exists(outfile_name)) {
   dat_td_net <- AddNetworkScore_Power(dat_td_raw, net_anna)
   ## add group index
   dat_td <- dat_td_net %>%
-    left_join(sbj_info %>% select(participant_id, gender, age, 
-                                  educations, QC_bold_fd_mean, LPAgroup, serverity)) 
-  
-  VIM::matrixplot(dat_td)
+    left_join(sbj_info) 
 }
 
+## factorize the LPAgroup
+dat_use <- dat_td %>%
+  mutate(LPAgroup = factor(LPAgroup, levels = c("I-MDD","NA-MDD","NI-MDD","A-MDD")))
+rio::export(dat_use, file = outfile_name)
+
+## check for missing value 
+VIM::matrixplot(dat_td)
 
 #############################################################################
 #
@@ -89,12 +94,13 @@ dev.off()
 
 #############################################################################
 #
-# Testing TD difference between cluster B and D with ANOVA
+# Testing TD difference among networks in subgroups
 #
 ############################################################################
 
-dat_td %>% filter(serverity == "server") %>%
-  select(participant_id, LPAgroup, ends_with("mean"), QC_bold_fd_mean, age, gender, educations) %>%
+## testing the difference between B and D, which is our interest
+dat_use %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>%
+  select(participant_id, LPAgroup, ends_with("mean"), QC_bold_fd_mean, age, gender) %>%
   select(-TD_mean) %>%
   pivot_longer(cols = 3:8, names_to = "network", values_to = "td") %>%
   bruceR::MANOVA(subID = "participant_id", dv = "td", 
@@ -102,7 +108,7 @@ dat_td %>% filter(serverity == "server") %>%
                  covariate = c("age","gender","QC_bold_fd_mean"))%>%
   bruceR::EMMEANS(effect = "LPAgroup", by = "network", p.adjust = "fdr")
 # ───────────────────────────────────────────────────────────────────────────────────────
-# MS   MSE df1 df2     F     p     η²p [90% CI of η²p]  η²G
+#                                MS   MSE df1 df2     F     p     η²p [90% CI of η²p]  η²G
 # ───────────────────────────────────────────────────────────────────────────────────────
 # LPAgroup                   0.003 0.002   1  65 1.255  .267       .019 [.000, .105] .002
 # age                        0.008 0.002   1  65 3.459  .067 .     .051 [.000, .160] .007
@@ -115,17 +121,40 @@ dat_td %>% filter(serverity == "server") %>%
 # QC_bold_fd_mean * network  0.009 0.003   5 325 2.707  .021 *     .040 [.003, .068] .035
 # ───────────────────────────────────────────────────────────────────────────────────────
 # Pairwise Comparisons of "LPAgroup":
-# ────────────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────────────────
 # Contrast     "network" Estimate    S.E. df      t     p     Cohen’s d [95% CI of d]
-# ────────────────────────────────────────────────────────────────────────────────────
-# D - B ATN_mean         0.001 (0.014) 65  0.101  .920      0.018 [-0.339,  0.375]
-# D - B DMN_mean        -0.004 (0.010) 65 -0.369  .713     -0.048 [-0.306,  0.210]
-# D - B FPN_mean         0.010 (0.017) 65  0.577  .566      0.126 [-0.311,  0.564]
-# D - B salience_mean    0.022 (0.018) 65  1.192  .237      0.282 [-0.190,  0.754]
-# D - B somMot_mean     -0.026 (0.012) 65 -2.087  .041 *   -0.333 [-0.652, -0.014]
-# D - B visual_mean     -0.037 (0.012) 65 -3.038  .003 **  -0.483 [-0.800, -0.165]
-# ────────────────────────────────────────────────────────────────────────────────────
-# Pooled SD for computing Cohen’s d: 0.077
+# ──────────────────────────────────────────────────────────────────────────────────────────────
+# (A-MDD) - (NA-MDD) ATN_mean         0.001 (0.014) 65  0.101  .920      0.018 [-0.339,  0.375]
+# (A-MDD) - (NA-MDD) DMN_mean        -0.004 (0.010) 65 -0.369  .713     -0.048 [-0.306,  0.210]
+# (A-MDD) - (NA-MDD) FPN_mean         0.010 (0.017) 65  0.577  .566      0.126 [-0.311,  0.564]
+# (A-MDD) - (NA-MDD) salience_mean    0.022 (0.018) 65  1.192  .237      0.282 [-0.190,  0.754]
+# (A-MDD) - (NA-MDD) somMot_mean     -0.026 (0.012) 65 -2.087  .041 *   -0.333 [-0.652, -0.014]
+# (A-MDD) - (NA-MDD) visual_mean     -0.037 (0.012) 65 -3.038  .003 **  -0.483 [-0.800, -0.165]
+# ──────────────────────────────────────────────────────────────────────────────────────────────
+
+## controlling analysis: testing if the same effect could be found in A and C
+dat_td %>% filter(LPAgroup == "I-MDD" | LPAgroup == "NI-MDD") %>%
+  select(participant_id, LPAgroup, ends_with("mean"), 
+         QC_bold_fd_mean, age, gender, educations) %>%
+  select(-TD_mean) %>%
+  pivot_longer(cols = 3:8, names_to = "network", values_to = "td") %>%
+  bruceR::MANOVA(subID = "participant_id", dv = "td", 
+                 between = "LPAgroup", within = 'network',
+                 covariate = c("age","gender","QC_bold_fd_mean"),
+                 sph.correction="GG")
+# ─────────────────────────────────────────────────────────────────────────────────────────────
+#                              MS   MSE   df1     df2     F     p     η²p [90% CI of η²p]  η²G
+# ─────────────────────────────────────────────────────────────────────────────────────────────
+# LPAgroup                   0.005 0.004 1.000  53.000 1.343  .252       .025 [.000, .130] .004
+# age                        0.001 0.004 1.000  53.000 0.309  .581       .006 [.000, .082] .001
+# gender                     0.001 0.004 1.000  53.000 0.231  .633       .004 [.000, .075] .001
+# QC_bold_fd_mean            0.001 0.004 1.000  53.000 0.330  .568       .006 [.000, .083] .001
+# network                    0.021 0.005 3.977 210.789 4.220  .003 **    .074 [.016, .124] .063
+# LPAgroup * network         0.006 0.005 3.977 210.789 1.247  .292       .023 [.000, .050] .019
+# age * network              0.006 0.005 3.977 210.789 1.243  .294       .023 [.000, .050] .019
+# gender * network           0.007 0.005 3.977 210.789 1.385  .241       .025 [.000, .054] .021
+# QC_bold_fd_mean * network  0.009 0.005 3.977 210.789 1.788  .133       .033 [.000, .066] .028
+# ─────────────────────────────────────────────────────────────────────────────────────────────
 
 #############################################################################
 #
@@ -136,11 +165,11 @@ dat_td %>% filter(serverity == "server") %>%
 ## plot the contrast of somatomotor network
 show_col(pal_lancet("lanonc")(4)) # obtain the color for B, D
 
-f_log1 <- dat_td %>% filter(LPAgroup == "D" | LPAgroup == "B") %>% 
+f_log1 <- dat_td %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>% 
   .$LPAgroup
 f_log1 <- c(.75, 1.75)[as.integer(factor(f_log1))]
 
-p_log_dot_somMot <- dat_td %>% filter(LPAgroup == "D" | LPAgroup == "B") %>% 
+p_log_dot_somMot <- dat_td %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>% 
   ggplot(aes(x = LPAgroup, y = somMot_mean)) +
   geom_boxplot(
     fill = c("#ED0000FF","#0099B4FF"),
@@ -155,20 +184,20 @@ p_log_dot_somMot <- dat_td %>% filter(LPAgroup == "D" | LPAgroup == "B") %>%
               xmin = c(1), 
               xmax = c(2),
               tip_length = 0) +
-  #coord_flip() +
+  coord_flip() +
   ylim(c(-0.11, 0.13)) +
-  ylab("Time delay") +  xlab("LPA group") +
+  ylab("Time delay") +  xlab("Subtype") +
   ggtitle("Somatomotor") +
   theme_classic() +
   easy_text_size(13)
 p_log_dot_somMot
 
 ## plot the visual network
-f_log2 <- dat_td %>% filter(LPAgroup == "B" | LPAgroup == "D") %>% 
+f_log2 <- dat_td %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>% 
   .$LPAgroup
 f_log2 <- c(.75, 1.75)[as.integer(factor(f_log2))]
 
-p_log_dot_visual <- dat_td %>% filter(LPAgroup == "B" | LPAgroup == "D") %>% 
+p_log_dot_visual <- dat_td %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>% 
   ggplot(aes(x = LPAgroup, y = visual_mean)) +
   geom_boxplot(
     fill = c("#ED0000FF","#0099B4FF"),
@@ -182,8 +211,8 @@ p_log_dot_visual <- dat_td %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
               y_position = .11, 
               xmin = 1, xmax = 2,
               tip_length = 0) +
-  #coord_flip() +
-  ylim(c(-.11, .12)) + xlab("LPA group") +
+  coord_flip() +
+  ylim(c(-.11, .12)) + xlab("Subtype") +
   ylab("Time delay") + ggtitle("Visual") +
   theme_classic() +
   easy_text_size(13)
@@ -195,43 +224,75 @@ p_log_dot_visual
 #
 ############################################################################
 
-dat_use <- dat_td %>% left_join(sbj_info)
-rio::export(dat_use, file = outfile_name)
-
 ## linear model for the predictive effect of TD in sensory networks on depression factor 
-model_lm <- dat_use %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
-  mutate(across(is.numeric, scale, scale = F)) %>%
+model_lm <- dat_use %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>%
+  mutate_at(vars(somMot_mean, visual_mean), ~ scale(., scale = F)) %>% # demean the time delay
   lm(HAMD_wave1_total ~ somMot_mean*LPAgroup + visual_mean*LPAgroup + 
        age + gender + QC_bold_fd_mean, data = .)
 bruceR::GLM_summary(model_lm) # check the results
-# ──────────────────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────────────────
 # β    S.E.      t     p        [95% CI of β] r(partial) r(part)
-# ──────────────────────────────────────────────────────────────────────────────────────────
-# somMot_mean             0.023 (0.145)  0.162  .872     [-0.266,  0.313]      0.021   0.018
-# LPAgroupD               0.060 (0.131)  0.457  .650     [-0.202,  0.321]      0.058   0.051
-# visual_mean             0.054 (0.196)  0.273  .786     [-0.338,  0.445]      0.035   0.031
-# age                     0.232 (0.119)  1.953  .055 .   [-0.005,  0.469]      0.243   0.219
-# gendermale              0.107 (0.125)  0.857  .395     [-0.143,  0.358]      0.109   0.096
-# QC_bold_fd_mean        -0.064 (0.125) -0.514  .609     [-0.314,  0.186]     -0.066  -0.058
-# somMot_mean:LPAgroupD  -0.312 (0.143) -2.175  .033 *   [-0.598, -0.025]     -0.268  -0.244
-# LPAgroupD:visual_mean  -0.154 (0.197) -0.779  .439     [-0.548,  0.241]     -0.099  -0.087
-# ──────────────────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────────────────
+# somMot_mean                 0.023 (0.145)  0.162  .872     [-0.266,  0.313]      0.021   0.018
+# LPAgroupA-MDD               0.060 (0.131)  0.457  .650     [-0.202,  0.321]      0.058   0.051
+# visual_mean                 0.054 (0.196)  0.273  .786     [-0.338,  0.445]      0.035   0.031
+# age                         0.232 (0.119)  1.953  .055 .   [-0.005,  0.469]      0.243   0.219
+# gendermale                  0.107 (0.125)  0.857  .395     [-0.143,  0.358]      0.109   0.096
+# QC_bold_fd_mean            -0.064 (0.125) -0.514  .609     [-0.314,  0.186]     -0.066  -0.058
+# somMot_mean:LPAgroupA-MDD  -0.312 (0.143) -2.175  .033 *   [-0.598, -0.025]     -0.268  -0.244
+# LPAgroupA-MDD:visual_mean  -0.154 (0.197) -0.779  .439     [-0.548,  0.241]     -0.099  -0.087
+# ──────────────────────────────────────────────────────────────────────────────────────────────
 
 ### post-hoc analysis for the predictive effect of somMot
 emtrends(model_lm, pairwise ~ LPAgroup, var="somMot_mean")
 # $emtrends
 # LPAgroup somMot_mean.trend   SE df lower.CL upper.CL
-# B                     1.98 12.2 61    -22.5    26.47
-# D                   -45.86 18.9 61    -83.8    -7.97
+# NA-MDD                1.98 12.2 61    -22.5    26.47
+# A-MDD               -45.86 18.9 61    -83.8    -7.97
 # 
 # Results are averaged over the levels of: gender 
 # Confidence level used: 0.95 
 # 
 # $contrasts
-# contrast estimate SE df t.ratio p.value
-# B - D        47.8 22 61   2.175  0.0335
+# contrast           estimate SE df t.ratio p.value
+# (NA-MDD) - (A-MDD)     47.8 22 61   2.175  0.0335
 # 
 # Results are averaged over the levels of: gender 
+
+interactions::sim_slopes(model_lm, johnson_neyman = F,
+                         pred = "somMot_mean", modx = "LPAgroup")
+# SIMPLE SLOPES ANALYSIS 
+# 
+# Slope of somMot_mean when LPAgroup = A-MDD: 
+#   
+#   Est.    S.E.   t val.      p
+# -------- ------- -------- ------
+#   -45.86   18.95    -2.42   0.02
+# 
+# Slope of somMot_mean when LPAgroup = NA-MDD: 
+#   
+#   Est.    S.E.   t val.      p
+# ------ ------- -------- ------
+#   1.98   12.25     0.16   0.87
+
+## test if the same effect would be found in I-MDD and NI-MDD
+model_lm <- dat_use %>% filter(LPAgroup == "I-MDD" | LPAgroup == "NI-MDD") %>%
+  mutate_at(vars(somMot_mean, visual_mean), ~ scale(., scale = F)) %>% # demean the time delay
+  lm(HAMD_wave1_total ~ somMot_mean*LPAgroup + visual_mean*LPAgroup + 
+       age + gender + QC_bold_fd_mean, data = .)
+bruceR::GLM_summary(model_lm) # check the results
+# ───────────────────────────────────────────────────────────────────────────────────────────────
+# β    S.E.      t     p        [95% CI of β] r(partial) r(part)
+# ───────────────────────────────────────────────────────────────────────────────────────────────
+# somMot_mean                 -0.297 (0.222) -1.334  .188     [-0.744,  0.150]     -0.187  -0.167
+# LPAgroupNI-MDD               0.035 (0.130)  0.267  .790     [-0.227,  0.296]      0.038   0.033
+# visual_mean                  0.033 (0.172)  0.192  .849     [-0.312,  0.378]      0.027   0.024
+# age                         -0.147 (0.149) -0.989  .328     [-0.446,  0.152]     -0.140  -0.124
+# gendermale                  -0.191 (0.141) -1.350  .183     [-0.475,  0.093]     -0.189  -0.169
+# QC_bold_fd_mean             -0.288 (0.140) -2.060  .045 *   [-0.568, -0.007]     -0.282  -0.258
+# somMot_mean:LPAgroupNI-MDD   0.060 (0.214)  0.282  .779     [-0.369,  0.490]      0.040   0.035
+# LPAgroupNI-MDD:visual_mean  -0.183 (0.172) -1.064  .293     [-0.527,  0.162]     -0.150  -0.133
+# ───────────────────────────────────────────────────────────────────────────────────────────────
 
 ############################################################################
 #
@@ -240,15 +301,20 @@ emtrends(model_lm, pairwise ~ LPAgroup, var="somMot_mean")
 ############################################################################
 
 ## plot the LPA group specific correlation
-p_hamd_lpa_cor <- dat_use %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
+p_hamd_lpa_cor <- dat_use %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>%
 ggplot(., aes(x = somMot_mean, y = HAMD_wave1_total, color = LPAgroup)) +
   geom_point(size = 3, alpha = .4) +
   geom_smooth(method = 'lm') +
   scale_color_manual(values = c("#ED0000FF","#0099B4FF")) +
-  ylab("HAMD score") + xlab("time delay") +
+  ylab("HAMD score") + xlab("Time delay") +
   theme_classic() + 
-  easy_text_size(13) + easy_add_legend_title("Subtypes")
+  easy_text_size(13) + easy_add_legend_title("Subtype")
 p_hamd_lpa_cor
+
+p_lm_emm <- plot_model(model_lm, type = "emm", terms=c("somMot_mean","LPAgroup")) +
+  ylab("Predicted values") + xlab("Time delay") + ggtitle("Somatomotor") +
+  theme_blank() + easy_remove_legend()
+p_lm_emm
 
 ############################################################################
 #
@@ -258,13 +324,13 @@ p_hamd_lpa_cor
 
 ## construct the data for modelling
 dat_lm_logi <- dat_use %>%
-  mutate(treatEff_recode = ifelse(treatGroup == "positive", 1, 0))
-dat_lm_logi$treatEff_recode <- factor(dat_lm_logi$treatEff_recode, levels = c(0,1),
-                                      labels = c("negative","positive"))
+  mutate(treatEff_recode = ifelse(treatGroup == "positive", 1, 0)) %>%
+  mutate(treatEff_recode = factor(treatEff_recode, levels = c(0,1),
+                                  labels = c("negative","positive")))
 
 ## build the model
-model_logi <- dat_lm_logi %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
-  mutate(across(is.numeric, scale, scale = F)) %>%
+model_logi <- dat_lm_logi %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>%
+  mutate_at(vars(somMot_mean, visual_mean, HAMD_wave1_total), ~ scale(., scale = F)) %>% 
   glm(treatEff_recode ~  somMot_mean*LPAgroup + visual_mean*LPAgroup + 
         age + gender + QC_bold_fd_mean + HAMD_wave1_total, 
       data = .,
@@ -273,7 +339,7 @@ model_logi <- dat_lm_logi %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
 ## check the result
 bruceR::GLM_summary(model_logi)
 # Model Fit:
-# AIC = 86.331
+#   AIC = 86.331
 # BIC = 108.816
 # χ²(9) = 20.82, p = 0.013 *  
 #   ─────── Pseudo-R² ───────
@@ -283,36 +349,52 @@ bruceR::GLM_summary(model_logi)
 # Unstandardized Coefficients:
 #   Outcome Variable: treatEff_recode (family: binomial; link function: logit)
 # N = 70
-# ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-# b     S.E.      z     p          [95% CI of b]                              OR   VIF
-# ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-# (Intercept)              0.551 ( 0.453)  1.217  .224     [ -0.337,   1.438]                           1.735      
-# somMot_mean            -13.473 ( 7.978) -1.689  .091 .   [-29.110,   2.164]                           0.000 1.815
-# LPAgroupD                1.900 ( 1.352)  1.406  .160     [ -0.749,   4.549]                           6.685 3.863
-# visual_mean             10.095 ( 9.353)  1.079  .280     [ -8.236,  28.427]                       24225.727 1.756
-# age                      0.047 ( 0.029)  1.614  .107     [ -0.010,   0.105]                           1.048 1.222
-# gendermale               0.750 ( 0.878)  0.854  .393     [ -0.970,   2.471]                           2.117 1.378
-# QC_bold_fd_mean        -20.584 (10.913) -1.886  .059 .   [-41.973,   0.804]                           0.000 1.257
-# HAMD_wave1_total        -0.014 ( 0.080) -0.181  .857     [ -0.170,   0.142]                           0.986 1.318
-# somMot_mean:LPAgroupD   61.522 (29.122)  2.113  .035 *   [  4.444, 118.601] 523405233545061704782840022.000 5.326
-# LPAgroupD:visual_mean  -39.845 (20.533) -1.940  .052 .   [-80.090,   0.400]                           0.000 2.611
-# ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+#                                b     S.E.      z     p          [95% CI of b]                              OR   VIF
+# ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+# (Intercept)                  1.037 ( 1.404)  0.739  .460     [ -1.715,   3.788]                           2.820      
+# somMot_mean                -13.473 ( 7.978) -1.689  .091 .   [-29.110,   2.164]                           0.000 1.815
+# LPAgroupA-MDD                1.900 ( 1.352)  1.406  .160     [ -0.749,   4.549]                           6.685 3.863
+# visual_mean                 10.095 ( 9.353)  1.079  .280     [ -8.236,  28.427]                       24225.727 1.756
+# age                          0.047 ( 0.029)  1.614  .107     [ -0.010,   0.105]                           1.048 1.222
+# gendermale                   0.750 ( 0.878)  0.854  .393     [ -0.970,   2.471]                           2.117 1.378
+# QC_bold_fd_mean            -20.584 (10.913) -1.886  .059 .   [-41.973,   0.804]                           0.000 1.257
+# HAMD_wave1_total            -0.014 ( 0.080) -0.181  .857     [ -0.170,   0.142]                           0.986 1.318
+# somMot_mean:LPAgroupA-MDD   61.522 (29.122)  2.113  .035 *   [  4.444, 118.601] 523405233545091460204486600.000 5.326
+# LPAgroupA-MDD:visual_mean  -39.845 (20.533) -1.940  .052 .   [-80.090,   0.400]                           0.000 2.611
+# ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ## post-hoc anlaysis
 emtrends(model_logi, pairwise ~ LPAgroup, var="somMot_mean")
 # $emtrends
 # LPAgroup somMot_mean.trend    SE  df asymp.LCL asymp.UCL
-# B                    -13.5  7.98 Inf    -29.11      2.16
-# D                     48.0 27.78 Inf     -6.39    102.49
+# NA-MDD               -13.5  7.98 Inf    -29.11      2.16
+# A-MDD                 48.0 27.78 Inf     -6.39    102.49
 # 
 # Results are averaged over the levels of: gender 
 # Confidence level used: 0.95 
 # 
 # $contrasts
-# contrast estimate   SE  df z.ratio p.value
-# B - D       -61.5 29.1 Inf  -2.113  0.0346
+# contrast           estimate   SE  df z.ratio p.value
+# (NA-MDD) - (A-MDD)    -61.5 29.1 Inf  -2.113  0.0346
 # 
 # Results are averaged over the levels of: gender 
+
+interactions::sim_slopes(model_logi, johnson_neyman = F,
+                         pred = "somMot_mean", modx = "LPAgroup")
+# SIMPLE SLOPES ANALYSIS 
+# 
+# Slope of somMot_mean when LPAgroup = A-MDD: 
+#   
+#   Est.    S.E.   z val.      p
+# ------- ------- -------- ------
+#   48.05   27.78     1.73   0.08
+# 
+# Slope of somMot_mean when LPAgroup = NA-MDD: 
+#   
+#   Est.   S.E.   z val.      p
+# -------- ------ -------- ------
+#   -13.47   7.98    -1.69   0.09
 
 ############################################################################
 #
@@ -320,7 +402,7 @@ emtrends(model_logi, pairwise ~ LPAgroup, var="somMot_mean")
 #
 ############################################################################
 
-p_box_somMot <- dat_lm_logi %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
+p_logi_somMot <- dat_lm_logi %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>%
   select(participant_id, LPAgroup, treatEff_recode, somMot_mean) %>%
   ggplot(aes(x = LPAgroup, y = somMot_mean, fill = treatEff_recode)) +
   geom_boxplot(alpha = .5) + 
@@ -329,20 +411,39 @@ p_box_somMot <- dat_lm_logi %>% filter(LPAgroup == "B" | LPAgroup == "D") %>%
   theme_classic() + 
   easy_add_legend_title("Response") +
   easy_text_size(15)  
-p_box_somMot
+p_logi_somMot
 
+p_logi_emm <- plot_model(model_logi, type = "emm", terms=c("somMot_mean","LPAgroup")) +
+  xlab("Time delay") + ylab("Predicted probabilityes") +
+  ggtitle("Somatomotor") +
+  theme_blank() + easy_text_size(13) + easy_add_legend_title("Subtype")
+p_logi_emm
 
 #############################################################################
 #
 # combine the plots
 #
 ############################################################################
+layout_use <- "
+AACC
+BBCC
+DDEE
+DDEE
+"
 
-p_combine <- p_log_dot_somMot + p_log_dot_visual + p_hamd_lpa_cor + p_box_somMot +
-  plot_layout(guides = "collect")
+p_combine <- p_log_dot_somMot + p_log_dot_visual + p_lm_emm + 
+  p_logi_emm + p_logi_somMot +
+  plot_layout(guides = "collect", design = layout_use) +
+  plot_annotation(tag_levels = "A") &
+  theme(text = element_text(size = 15), 
+        axis.title.x = element_text(size =10),
+        axis.text =  element_text(size =13),
+        axis.title.y = element_text(size = 10, face = "bold"),
+        legend.title = element_text(size =13),
+        plot.tag = element_text(size = 18, face = "bold"))
 p_combine
 
 Cairo::Cairo(width = 2700, height = 2300, dpi = 300,
-             file = "outputs/Anay2_plot_combine.png")
+             file = "outputs/Fig2.png")
 print(p_combine)
 dev.off()
