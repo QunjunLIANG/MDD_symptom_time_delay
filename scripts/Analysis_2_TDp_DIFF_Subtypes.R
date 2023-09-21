@@ -184,12 +184,11 @@ p_log_dot_somMot <- dat_td %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD"
               xmin = c(1), 
               xmax = c(2),
               tip_length = 0) +
-  coord_flip() +
   ylim(c(-0.11, 0.13)) +
   ylab("Time delay") +  xlab("Subtype") +
-  ggtitle("Somatomotor") +
+  ggtitle("somMot") +
   theme_classic() +
-  easy_text_size(13)
+  easy_text_size(13) + easy_rotate_x_labels(angle = -60)
 p_log_dot_somMot
 
 ## plot the visual network
@@ -211,16 +210,15 @@ p_log_dot_visual <- dat_td %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD"
               y_position = .11, 
               xmin = 1, xmax = 2,
               tip_length = 0) +
-  coord_flip() +
   ylim(c(-.11, .12)) + xlab("Subtype") +
   ylab("Time delay") + ggtitle("Visual") +
   theme_classic() +
-  easy_text_size(13)
+  easy_text_size(13) + easy_rotate_x_labels(angle = -60)
 p_log_dot_visual
 
 ############################################################################
 #
-# The correlation between symptom and TD
+# Linear model for the effect between HAMD and TD
 #
 ############################################################################
 
@@ -231,7 +229,7 @@ model_lm <- dat_use %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>%
        age + gender + QC_bold_fd_mean, data = .)
 bruceR::GLM_summary(model_lm) # check the results
 # ──────────────────────────────────────────────────────────────────────────────────────────────
-# β    S.E.      t     p        [95% CI of β] r(partial) r(part)
+#                                 β    S.E.      t     p        [95% CI of β] r(partial) r(part)
 # ──────────────────────────────────────────────────────────────────────────────────────────────
 # somMot_mean                 0.023 (0.145)  0.162  .872     [-0.266,  0.313]      0.021   0.018
 # LPAgroupA-MDD               0.060 (0.131)  0.457  .650     [-0.202,  0.321]      0.058   0.051
@@ -242,8 +240,21 @@ bruceR::GLM_summary(model_lm) # check the results
 # somMot_mean:LPAgroupA-MDD  -0.312 (0.143) -2.175  .033 *   [-0.598, -0.025]     -0.268  -0.244
 # LPAgroupA-MDD:visual_mean  -0.154 (0.197) -0.779  .439     [-0.548,  0.241]     -0.099  -0.087
 # ──────────────────────────────────────────────────────────────────────────────────────────────
+car::Anova(model_lm, type = 3)
+# Response: HAMD_wave1_total
+#                         Sum Sq Df  F value  Pr(>F)    
+# (Intercept)          2219.70  1 142.1766 < 2e-16 ***
+# somMot_mean             0.41  1   0.0262 0.87187    
+# LPAgroup                3.26  1   0.2085 0.64957    
+# visual_mean             1.17  1   0.0747 0.78560    
+# age                    59.57  1   3.8158 0.05536 .  
+# gender                 11.48  1   0.7351 0.39459    
+# QC_bold_fd_mean         4.13  1   0.2645 0.60890    
+# somMot_mean:LPAgroup   73.89  1   4.7327 0.03348 *  
+# LPAgroup:visual_mean    9.47  1   0.6067 0.43905    
+# Residuals             952.35 61   
 
-### post-hoc analysis for the predictive effect of somMot
+### between-group contrast for somMot
 emtrends(model_lm, pairwise ~ LPAgroup, var="somMot_mean")
 # $emtrends
 # LPAgroup somMot_mean.trend   SE df lower.CL upper.CL
@@ -259,6 +270,7 @@ emtrends(model_lm, pairwise ~ LPAgroup, var="somMot_mean")
 # 
 # Results are averaged over the levels of: gender 
 
+### simple slope analysis for somMot
 interactions::sim_slopes(model_lm, johnson_neyman = F,
                          pred = "somMot_mean", modx = "LPAgroup")
 # SIMPLE SLOPES ANALYSIS 
@@ -268,31 +280,12 @@ interactions::sim_slopes(model_lm, johnson_neyman = F,
 #   Est.    S.E.   t val.      p
 # -------- ------- -------- ------
 #   -45.86   18.95    -2.42   0.02
-# 
+#
 # Slope of somMot_mean when LPAgroup = NA-MDD: 
 #   
 #   Est.    S.E.   t val.      p
 # ------ ------- -------- ------
 #   1.98   12.25     0.16   0.87
-
-## test if the same effect would be found in I-MDD and NI-MDD
-model_lm <- dat_use %>% filter(LPAgroup == "I-MDD" | LPAgroup == "NI-MDD") %>%
-  mutate_at(vars(somMot_mean, visual_mean), ~ scale(., scale = F)) %>% # demean the time delay
-  lm(HAMD_wave1_total ~ somMot_mean*LPAgroup + visual_mean*LPAgroup + 
-       age + gender + QC_bold_fd_mean, data = .)
-bruceR::GLM_summary(model_lm) # check the results
-# ───────────────────────────────────────────────────────────────────────────────────────────────
-# β    S.E.      t     p        [95% CI of β] r(partial) r(part)
-# ───────────────────────────────────────────────────────────────────────────────────────────────
-# somMot_mean                 -0.297 (0.222) -1.334  .188     [-0.744,  0.150]     -0.187  -0.167
-# LPAgroupNI-MDD               0.035 (0.130)  0.267  .790     [-0.227,  0.296]      0.038   0.033
-# visual_mean                  0.033 (0.172)  0.192  .849     [-0.312,  0.378]      0.027   0.024
-# age                         -0.147 (0.149) -0.989  .328     [-0.446,  0.152]     -0.140  -0.124
-# gendermale                  -0.191 (0.141) -1.350  .183     [-0.475,  0.093]     -0.189  -0.169
-# QC_bold_fd_mean             -0.288 (0.140) -2.060  .045 *   [-0.568, -0.007]     -0.282  -0.258
-# somMot_mean:LPAgroupNI-MDD   0.060 (0.214)  0.282  .779     [-0.369,  0.490]      0.040   0.035
-# LPAgroupNI-MDD:visual_mean  -0.183 (0.172) -1.064  .293     [-0.527,  0.162]     -0.150  -0.133
-# ───────────────────────────────────────────────────────────────────────────────────────────────
 
 ############################################################################
 #
@@ -300,19 +293,9 @@ bruceR::GLM_summary(model_lm) # check the results
 #
 ############################################################################
 
-## plot the LPA group specific correlation
-p_hamd_lpa_cor <- dat_use %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>%
-ggplot(., aes(x = somMot_mean, y = HAMD_wave1_total, color = LPAgroup)) +
-  geom_point(size = 3, alpha = .4) +
-  geom_smooth(method = 'lm') +
-  scale_color_manual(values = c("#ED0000FF","#0099B4FF")) +
-  ylab("HAMD score") + xlab("Time delay") +
-  theme_classic() + 
-  easy_text_size(13) + easy_add_legend_title("Subtype")
-p_hamd_lpa_cor
-
+## plot the simple slope between HAMD & somMot
 p_lm_emm <- plot_model(model_lm, type = "emm", terms=c("somMot_mean","LPAgroup")) +
-  ylab("Predicted values") + xlab("Time delay") + ggtitle("Somatomotor") +
+  ylab("Predicted values") + xlab("TD in somMot") + ggtitle("HAMD") +
   theme_blank() + easy_remove_legend()
 p_lm_emm
 
@@ -363,7 +346,20 @@ bruceR::GLM_summary(model_logi)
 # somMot_mean:LPAgroupA-MDD   61.522 (29.122)  2.113  .035 *   [  4.444, 118.601] 523405233545091460204486600.000 5.326
 # LPAgroupA-MDD:visual_mean  -39.845 (20.533) -1.940  .052 .   [-80.090,   0.400]                           0.000 2.611
 # ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-
+car::Anova(model_logi, type = 3)
+# Analysis of Deviance Table (Type III tests)
+# 
+# Response: treatEff_recode
+#                     LR Chisq Df Pr(>Chisq)   
+# somMot_mean            3.1867  1   0.074241 . 
+# LPAgroup               3.0193  1   0.082278 . 
+# visual_mean            1.2108  1   0.271180   
+# age                    2.9134  1   0.087847 . 
+# gender                 0.7585  1   0.383794   
+# QC_bold_fd_mean        3.8302  1   0.050336 . 
+# HAMD_wave1_total       0.0326  1   0.856669   
+# somMot_mean:LPAgroup   8.2175  1   0.004149 **
+# LPAgroup:visual_mean   4.7980  1   0.028493 * 
 ## post-hoc anlaysis
 emtrends(model_logi, pairwise ~ LPAgroup, var="somMot_mean")
 # $emtrends
@@ -406,16 +402,17 @@ p_logi_somMot <- dat_lm_logi %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MD
   select(participant_id, LPAgroup, treatEff_recode, somMot_mean) %>%
   ggplot(aes(x = LPAgroup, y = somMot_mean, fill = treatEff_recode)) +
   geom_boxplot(alpha = .5) + 
-  xlab('Subtypes') + ylab("Time delay") + ggtitle("Somatomotor") +
+  xlab('Subtypes') + ylab("Time delay") + ggtitle("somMot") +
   scale_fill_manual(values = c("#2E2A2BFF", "#CF4E9CFF")) + ylim(-.15, .15) +
   theme_classic() + 
   easy_add_legend_title("Response") +
+  coord_flip() +
   easy_text_size(15)  
 p_logi_somMot
 
-p_logi_emm <- plot_model(model_logi, type = "emm", terms=c("somMot_mean","LPAgroup")) +
+p_logi_emm <- plot_model(model_logi, type = "emm", terms=c("somMot_mean [all]","LPAgroup")) +
   xlab("Time delay") + ylab("Predicted probabilityes") +
-  ggtitle("Somatomotor") +
+  ggtitle("somMot") +
   theme_blank() + easy_text_size(13) + easy_add_legend_title("Subtype")
 p_logi_emm
 
@@ -425,8 +422,8 @@ p_logi_emm
 #
 ############################################################################
 layout_use <- "
-AACC
-BBCC
+ABCC
+ABCC
 DDEE
 DDEE
 "
@@ -443,7 +440,7 @@ p_combine <- p_log_dot_somMot + p_log_dot_visual + p_lm_emm +
         plot.tag = element_text(size = 18, face = "bold"))
 p_combine
 
-Cairo::Cairo(width = 2700, height = 2300, dpi = 300,
+Cairo::Cairo(width = 3000, height = 2400, dpi = 300,
              file = "outputs/Fig2.png")
 print(p_combine)
 dev.off()

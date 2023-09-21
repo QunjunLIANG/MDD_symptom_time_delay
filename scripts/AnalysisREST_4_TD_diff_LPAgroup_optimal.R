@@ -73,7 +73,7 @@ model_lm <- dat_td %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>%
        age + gender + fd_mean, data = .)        
 bruceR::GLM_summary(model_lm) # check the results
 # ───────────────────────────────────────────────────────────────────────────────────────────────
-#                                 β    S.E.      t     p        [95% CI of β] r(partial) r(part)
+# β    S.E.      t     p        [95% CI of β] r(partial) r(part)
 # ───────────────────────────────────────────────────────────────────────────────────────────────
 # somMot_mean                  0.018 (0.083)  0.223  .824     [-0.145,  0.181]      0.015   0.013
 # LPAgroupNA-MDD              -0.371 (0.063) -5.876 <.001 *** [-0.495, -0.247]     -0.361  -0.354
@@ -159,7 +159,7 @@ model_lm <- dat_td %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>%
        age + gender + fd_mean, data = .)        
 bruceR::GLM_summary(model_lm) # check the results
 # ───────────────────────────────────────────────────────────────────────────────────────────────
-#                                  β    S.E.      t     p        [95% CI of β] r(partial) r(part)
+# β    S.E.      t     p        [95% CI of β] r(partial) r(part)
 # ───────────────────────────────────────────────────────────────────────────────────────────────
 # somMot_mean                  0.095 (0.093)  1.019  .309     [-0.089,  0.278]      0.071   0.067
 # LPAgroupNA-MDD              -0.281 (0.068) -4.168 <.001 *** [-0.415, -0.148]     -0.281  -0.273

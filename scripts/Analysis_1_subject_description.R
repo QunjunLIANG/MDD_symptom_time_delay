@@ -19,6 +19,7 @@ library(ggsignif)
 library(patchwork)
 library(scales)
 library(forcats) 
+source("scripts/function_PvalueForTable1.R")
 
 # load the data
 dat_sbj <- rio::import('inputs/subject_information.xlsx')
@@ -150,16 +151,53 @@ bruceR::MANOVA(
 # (NI-MDD) - (NA-MDD)   -9.465 (0.980) 122  -9.655 <.001 *** -2.197 [-2.808, -1.587]
 # ───────────────────────────────────────────────────────────────────────────────────
 
+## retardation difference between A-MDD and NA-MDD
+dat_mdd_factor_lpa %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>%
+  select(participant_id, LPAgroup, HAMA_wave1_item8) %>%
+  mutate(LPAgroup_recode = ifelse(LPAgroup == "A-MDD", "A-MDD", "NA-MDD")) %>%
+  bruceR::TTEST(y = "HAMA_wave1_item8", x = "LPAgroup_recode", digits = 3)
+# Results of t-test: HAMA_wave1_item13: LPAgroup_recode (NA-MDD - A-MDD)  
+# ──────────────────────────────────────────────────────────────────────────────
+#      t df     p         Difference [95% CI]      Cohen’s d [95% CI]    BF10
+# ──────────────────────────────────────────────────────────────────────────────
+# -2.629 68  .011 *   -0.752 [-1.322, -0.181] -0.650 [-1.144, -0.157] 4.431e+00
+# ──────────────────────────────────────────────────────────────────────────────
+
+## somatic difference between A-MDD and NA-MDD
+dat_mdd_factor_lpa %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>%
+  select(participant_id, LPAgroup, HAMA_wave1_item13) %>%
+  mutate(LPAgroup_recode = ifelse(LPAgroup == "A-MDD", "A-MDD", "NA-MDD")) %>%
+  bruceR::TTEST(y = "HAMA_wave1_item13", x = "LPAgroup_recode", digits = 3)
+# Results of t-test: HAMA_wave1_item13: LPAgroup_recode (NA-MDD - A-MDD)  
+# ──────────────────────────────────────────────────────────────────────────────
+#       t df     p         Difference [95% CI]      Cohen’s d [95% CI]   BF10
+# ──────────────────────────────────────────────────────────────────────────────
+# -4.161 68 <.001 *** -0.703 [-1.040, -0.366] -1.029 [-1.523, -0.536] 2.399e+02
+# ──────────────────────────────────────────────────────────────────────────────
+
 ## HAMA difference between A-MDD and NA-MDD
 dat_mdd_factor_lpa %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD") %>%
   select(participant_id, LPAgroup, HAMA_wave1_total) %>%
-  bruceR::TTEST(y = "HAMA_wave1_total", x = "LPAgroup", digits = 3)
+  mutate(LPAgroup_recode = ifelse(LPAgroup == "A-MDD", "A-MDD", "NA-MDD")) %>%
+  bruceR::TTEST(y = "HAMA_wave1_total", x = "LPAgroup_recode", digits = 3)
 # Results of t-test:
 # ──────────────────────────────────────────────────────────────────────────────
-# t df     p         Difference [95% CI]      Cohen’s d [95% CI]      BF10
+#       t df     p         Difference [95% CI]      Cohen’s d [95% CI]   BF10
 # ──────────────────────────────────────────────────────────────────────────────
 # -2.372 68  .021 *   -3.816 [-7.027, -0.606] -0.587 [-1.080, -0.093] 2.633e+00
 # ──────────────────────────────────────────────────────────────────────────────
+
+## HAMA difference between I-MDD and NI-MDD
+dat_mdd_factor_lpa %>% filter(LPAgroup == "I-MDD" | LPAgroup == "NI-MDD") %>%
+  select(participant_id, LPAgroup, HAMA_wave1_total) %>%
+  mutate(LPAgroup_recode = ifelse(LPAgroup == "I-MDD", "I-MDD", "NI-MDD")) %>%
+  bruceR::TTEST(y = "HAMA_wave1_total", x = "LPAgroup_recode", digits = 3)
+# Results of t-test:
+# ─────────────────────────────────────────────────────────────────────────────
+#      t df     p       Difference [95% CI]    Cohen’s d [95% CI]      BF10
+# ─────────────────────────────────────────────────────────────────────────────
+# 0.102 56  .919  0.171 [-3.204, 3.547]   0.027 [-0.510, 0.565]   2.721e-01
+# ─────────────────────────────────────────────────────────────────────────────
 
 ##############################################################
 #
@@ -278,16 +316,24 @@ p_treteffect_bar
 
 ### summary the LPA group 
 table1::table1(data = dat_mdd_factor_lpa_treat, 
-               ~ age + gender + HAMD_wave1_total + HAMD_wave3_total + treatGroup | LPAgroup) 
+               ~ age + gender + HAMD_wave1_total + HAMD_wave3_total + 
+                 treatGroup + HAMA_wave1_total | LPAgroup)
 
 ## proportion of treat response
-p_lpa_treatGroup <- dat_mdd_factor_lpa_treat %>% filter(treatGroup != "undefine" & !is.na(treatGroup)) %>%
+p_lpa_treatGroup <- dat_mdd_factor_lpa_treat %>% 
+  filter(treatGroup != "undefine" & !is.na(treatGroup)) %>%
   ggplot(aes(x = LPAgroup, fill = treatGroup)) +
   geom_bar(position = position_fill(), alpha = .6) +
   scale_fill_cosmic() + xlab("LPA subgroups") + ylab("Percentage") +
   coord_flip() + 
   theme_classic() +easy_add_legend_title("Response")
 p_lpa_treatGroup
+
+### summary the LPA group 
+table1::table1(data = dat_mdd_factor_lpa_treat %>% filter(LPAgroup == "A-MDD" | LPAgroup == "NA-MDD"), 
+               ~ age + gender + HAMD_wave1_total + HAMD_wave3_total + 
+                 treatGroup + HAMA_wave1_total | LPAgroup,
+               overall = F, extra.col=list("P-value"=pvalue)) 
 
 #############################################################
 #
